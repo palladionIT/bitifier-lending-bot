@@ -1,0 +1,3 @@
+[submodule "MarginBot"]
+	path = MarginBot
+	url = git@github.com:HFenter/MarginBot.git

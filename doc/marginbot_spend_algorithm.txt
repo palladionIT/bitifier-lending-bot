@@ -1,0 +1,11 @@
+Gap Top Gap Bottom Spread Lends
+basically it splits your current available money into (Spread Lends) loans, then it loads the full lendbook from bitfinex. It skips through the lendbook until it hits (Gap Bottom) $USD in total value, and offers the first loan at this rate -.0001%/day.
+If your Spread Lends is higher than 1, it will then try to evenly spread the rest of your money between the Gap Bottom setting and the Gap Top setting. For Example:
+Gap Bottom = $25,000
+Gap Top = $100,000
+Spread Lends = 3
+so, it will look through the lendbook, find the rate where where the total offers = $25,000 for lend 1
+then it'll find the rate where total offers = $62,500 (midway between $25,000 and $100,000) for lend offer 2
+then it'll find the rate where total offers = $100,000 for lend offer 3
+However, it will never lend lower than your Minimum Lend Rate setting. Also, it will make all offers for 2 days, unless the rate is above your "Minimum for 30 Day" setting, then it'll make the offer for 30 days. This is so it can catch flash runs and try to keep high rate loans out for as long as possible.
+Does all that make sense?
