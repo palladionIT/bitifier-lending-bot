@@ -11,11 +11,19 @@ class DatabaseConnector:
 
     def __init__(self, password):
         print('...initializing database')
-        outer_ref = self
 
         try:
             db_ref.init('bitifier.enc', passphrase=password)
             self.DBConnector = db_ref
+
+            self.DBConnector.connect()
+            #ddb_ref = SqlCipherDatabase('bitifier.db', passphrase='testfun123')
+            #ddb_ref.connect()
+
+            self.Statistics.create_table(fail_silently=True)
+            self.User.create_table(fail_silently=True)
+            self.Variables.create_table(fail_silently=True)
+            self.CronRuns.create_table(fail_silently=True)
 
             #http://charlesleifer.com/blog/encrypted-sqlite-databases-with-python-and-sqlcipher/
             #http://docs.peewee-orm.com/en/latest/peewee/models.html

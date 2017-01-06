@@ -15,7 +15,9 @@ class Bitifier:
     def __init__(self):
         print('...setting up proxy')
 
-        passphrase = getpass.getpass('Enter the database password: ')
+        # Todo: replace fixed password with prompt
+        #passphrase = getpass.getpass('Enter the database password: ')
+        passphrase = 'testphun123'
 
         self.DBConnector = DatabaseConnector(passphrase)
 
@@ -36,3 +38,6 @@ class Bitifier:
         #                         self.ConfParser.get('database_server', 'password').split()[0])
         print('setup')
         pass
+
+if __name__ == '__main__':
+    Bitifier()
