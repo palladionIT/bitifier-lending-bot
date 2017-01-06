@@ -3,7 +3,7 @@ import hmac
 from hashlib import sha384
 
 from .api import API as api
-from .database import Database as db
+from .databaseconnector import DatabaseConnector as db
 
 class Account:
 

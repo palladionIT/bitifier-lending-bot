@@ -2,6 +2,9 @@
 
 #from proxy.gpgpu.OCLHandler import OCLHandler
 #from .database.DatabaseConnector import DatabaseConnector
+from src.databaseconnector import DatabaseConnector
+
+import getpass
 
 
 class Bitifier:
@@ -11,6 +14,10 @@ class Bitifier:
 
     def __init__(self):
         print('...setting up proxy')
+
+        passphrase = getpass.getpass('Enter the database password: ')
+
+        self.DBConnector = DatabaseConnector(passphrase)
 
         #parser = ConfigParser()
         #parser.read('config/proxy.ini')
