@@ -1,17 +1,21 @@
 import sqlite3 as sql
 from playhouse.sqlcipher_ext import *
 
+db_ref = SqlCipherDatabase(None)
+
 class DatabaseConnector:
 
     DBPREFIX = 'btf_'
 
-    DBConnector = SqlCipherDatabase(None)
+    DBConnector = None
 
     def __init__(self, password):
         print('...initializing database')
+        outer_ref = self
 
         try:
-            self.DBConnector.init('bitifier.enc', passphrase=password)
+            db_ref.init('bitifier.enc', passphrase=password)
+            self.DBConnector = db_ref
 
             #http://charlesleifer.com/blog/encrypted-sqlite-databases-with-python-and-sqlcipher/
             #http://docs.peewee-orm.com/en/latest/peewee/models.html
@@ -65,41 +69,41 @@ class DatabaseConnector:
             print('Database error - unknown database error occurred.')
 
         finally:
-            if DBConnector:
-                DBConnector.close()
+            if self.DBConnector:
+                self.DBConnector.close()
 
     class BtfModel(Model):
         class Meta:
-            database = DatabaseConnector.DBConnector
+            database = db_ref
 
     class Statistics(BtfModel):
         id = PrimaryKeyField()
         user_id = IntegerField(unique=True)
         trans_id = IntegerField(unique=True)
         date = DateField()
-        depbalance = FloatField(max_digits=14, decimal_places=2)
-        swappayment = FloatField(max_digits=14, decimal_places=2)
-        averagereturn = FloatField(max_digits=14, decimal_places=6)
+        depbalance = DecimalField(max_digits=14, decimal_places=2)
+        swappayment = DecimalField(max_digits=14, decimal_places=2)
+        averagereturn = DecimalField(max_digits=14, decimal_places=6)
 
 
     class User(BtfModel):
         id = PrimaryKeyField()
-        name = TextField()
-        email = TextField()
-        password = TextField()
-        bfxapikey = TextField(max_length=64)
-        bfxapisec = TextField(max_legnth=64)
+        name = CharField()
+        email = CharField()
+        password = CharField()
+        bfxapikey = CharField(max_length=64)
+        bfxapisec = CharField(max_length=64)
         status = BooleanField()
 
     class Variables(BtfModel):
         id = PrimaryKeyField()
-        minlendrate = TextField(max_length=12)
-        spreadlend = TextField(max_length=12)
-        USDgapbottom = TextField(max_length=12)
-        USDgaptop = TextField(max_length=12)
-        thirtydaymin = TextField(max_length=12)
-        highholdlimit = TextField(max_length=12)
-        highholdamt = TextField(max_length=12)
+        minlendrate = CharField(max_length=12)
+        spreadlend = CharField(max_length=12)
+        USDgapbottom = CharField(max_length=12)
+        USDgaptop = CharField(max_length=12)
+        thirtydaymin = CharField(max_length=12)
+        highholdlimit = CharField(max_length=12)
+        highholdamt = CharField(max_length=12)
 
     class CronRuns(BtfModel):
         id = PrimaryKeyField()
