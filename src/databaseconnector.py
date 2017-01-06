@@ -24,6 +24,7 @@ class DatabaseConnector:
             self.User.create_table(fail_silently=True)
             self.Variables.create_table(fail_silently=True)
             self.CronRuns.create_table(fail_silently=True)
+            self.BotMetaInfo.create_table(fail_silently=True)
 
             #http://charlesleifer.com/blog/encrypted-sqlite-databases-with-python-and-sqlcipher/
             #http://docs.peewee-orm.com/en/latest/peewee/models.html
@@ -118,6 +119,10 @@ class DatabaseConnector:
         cronid = IntegerField(null=False)
         lastrum = DateField(null=False)
         details = TextField(null=False)
+
+    class BotMetaInfo(BtfModel):
+        id = PrimaryKeyField()
+        firstrun = BooleanField(default=True)
 
 
 '''$trackingSQL = 'CREATE TABLE `'.$tablePre.'Tracking` (
