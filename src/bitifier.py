@@ -4,17 +4,21 @@
 #from .database.DatabaseConnector import DatabaseConnector
 import re
 from src.databaseconnector import DatabaseConnector
+from src.account import Account
+from src.api import API
 
 import getpass
 
 
 class Bitifier:
     DBConnector = None
-    ComputeHandler = None
-    ConfParser = None
+    Accounts = []
+    API = None
 
     def __init__(self):
         print('...setting up proxy')
+
+        self.API = API()
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
         #passphrase = getpass.getpass('Enter the database password: ')
@@ -54,8 +58,15 @@ class Bitifier:
                                              bfxapikey=bfxkey,
                                              bfxapisec=bfxsec,
                                              status=True)
+        else:
+            for acc in self.DBConnector.User.select():
+                self.Accounts.append(Account(acc.id, acc.name, acc.email, acc.bfxapikey, acc.bfxapisec, self.API))
 
+        for account in self.Accounts:
+            account.log_in()
         # Todo: write API connection functionality
+        # Todo: focus on simple re-offering
+        # Todo: do analysis later
 
     def first_run(self):
         print('...checking if first run')
