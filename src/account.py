@@ -1,6 +1,9 @@
 from configparser import ConfigParser
 import hmac
-from hashlib import sha384
+import hashlib
+import time
+import json
+import base64
 
 from .api import API as api
 from .databaseconnector import DatabaseConnector as db
@@ -13,18 +16,17 @@ class Account:
     APIKey = None
     APISecret = None
     BFXToken = None
+    API = None
 
-    def __init__(self):
+    def __init__(self, id, mail, name, key, secret, api):
         print('...setting up account')
 
-        # TODO: get info from config and setup database
-
-        #parser = ConfigParser()
-        #parser.read('config/proxy.ini')
-        #self.ConfParser = parser
-        #self.DBConnector = DatabaseConnector(parser.get('database_server', 'address'), \
-        #                                     parser.get('database_server', 'port').split()[0])
-
+        self.UserID = id
+        self.UserMail = mail
+        self.UserName = name
+        self.APIKey = key
+        self.APISecret = secret
+        self.API = api
 
     def check_login_state(self):
         print('...checking login state of account')
@@ -33,11 +35,21 @@ class Account:
 
     def log_in(self):
         print('...logging in user')
-        # TODO: get user info from database/config and login and set session information
+        api_path = '/account_infos'
 
-        # Login in JS: http://docs.bitfinex.com/v1/docs/rest-auth
-        # hmac python: https://docs.python.org/2/library/hmac.html
-        # hashlib python: https://docs.python.org/2/library/hashlib.html#module-hashlib
+        payload = {'request': '/v1/account_infos', 'nonce': str(time.time())}
+        body = base64.b64encode(json.dumps(payload).encode())
+
+        signature = hmac.new(str.encode(self.APISecret), body, digestmod=hashlib.sha384).hexdigest()
+
+        headers = {'X-BFX-APIKEY': self.APIKey,
+                   'X-BFX-PAYLOAD': body,
+                   'X-BFX-SIGNATURE': signature}
+
+        response = self.API.post_request(url_path=api_path, head=headers)
+
+        print(response) # 200 if ok
+        #Todo: refactor code to represent actual API authentication
 
     def log_out(self):
         print('...logging out user')
