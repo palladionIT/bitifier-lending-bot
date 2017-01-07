@@ -13,6 +13,6 @@ class API:
         print('...performing GET request on API')
         return requests.get(self.BaseURL + url_path)
 
-    def post_request(self, url_path, post_params):
+    def post_request(self, url_path, post_params = None, head = None):
         print('...performing POST request on API')
-        return requests.post(self.BaseURL + url_path, data=post_params)
+        return requests.post(self.BaseURL + url_path, data=post_params, headers=head)
