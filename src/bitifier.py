@@ -5,7 +5,6 @@
 import re
 from src.databaseconnector import DatabaseConnector
 from src.account import Account
-from src.api import API
 
 import getpass
 
@@ -13,12 +12,9 @@ import getpass
 class Bitifier:
     DBConnector = None
     Accounts = []
-    API = None
 
     def __init__(self):
         print('...setting up proxy')
-
-        self.API = API()
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
         #passphrase = getpass.getpass('Enter the database password: ')
@@ -60,11 +56,12 @@ class Bitifier:
                                              status=True)
         else:
             for acc in self.DBConnector.User.select():
-                self.Accounts.append(Account(acc.id, acc.name, acc.email, acc.bfxapikey, acc.bfxapisec, self.API))
+                self.Accounts.append(Account(acc.id, acc.name, acc.email, acc.bfxapikey, acc.bfxapisec))
 
-        for account in self.Accounts:
-            account.log_in()
-        # Todo: write API connection functionality
+        #for account in self.Accounts:
+        #    account.check_api_connection()
+
+        self.run_frequent_task()
         # Todo: focus on simple re-offering
         # Todo: do analysis later
 
@@ -79,6 +76,13 @@ class Bitifier:
         except self.DBConnector.BotMetaInfo.DoesNotExist:
             self.DBConnector.BotMetaInfo.create(firstrun=False)
             return True
+
+    def run_frequent_task(self):
+        for account in self.Accounts:
+            if account.check_api_connection():
+                account.get_active_offers()
+                account.get_taken_offers()
+                account.get_account_history('usd')
 
 if __name__ == '__main__':
     Bitifier()

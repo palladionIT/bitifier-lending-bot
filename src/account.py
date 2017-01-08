@@ -13,47 +13,63 @@ class Account:
     UserID = None
     UserMail = None
     UserName = None
-    APIKey = None
-    APISecret = None
     BFXToken = None
     API = None
 
-    def __init__(self, id, mail, name, key, secret, api):
+    def __init__(self, id, mail, name, key, secret):
         print('...setting up account')
 
         self.UserID = id
         self.UserMail = mail
         self.UserName = name
-        self.APIKey = key
-        self.APISecret = secret
-        self.API = api
+        self.API = api(key, secret)
 
-    def check_login_state(self):
+    def check_api_connection(self):
         print('...checking login state of account')
-        # TODO: check if the session is stil valid
-        # TODO: if not -> unset session information
 
-    def log_in(self):
-        print('...logging in user')
         api_path = '/account_infos'
+        valid = True
 
-        payload = {'request': '/v1/account_infos', 'nonce': str(time.time())}
-        body = base64.b64encode(json.dumps(payload).encode())
+        success, return_code = self.API.get_request(url_path='/symbols')[0:2]
+        valid = valid and success
+        success, return_code = self.API.post_request(url_path=api_path)[0:2]
 
-        signature = hmac.new(str.encode(self.APISecret), body, digestmod=hashlib.sha384).hexdigest()
+        return valid and success
 
-        headers = {'X-BFX-APIKEY': self.APIKey,
-                   'X-BFX-PAYLOAD': body,
-                   'X-BFX-SIGNATURE': signature}
+    def get_active_offers(self):
+        success, return_code, response = self.API.post_request(url_path='/offers')
 
-        response = self.API.post_request(url_path=api_path, head=headers)
+        for offer in response:
+            print('process order')
+            #Todo: process active orders
 
-        print(response) # 200 if ok
-        #Todo: refactor code to represent actual API authentication
+    def get_taken_offers(self):
+        success, return_code, response = self.API.post_request(url_path='/credits')
 
-    def log_out(self):
-        print('...logging out user')
-        # TODO: logout and remove all session information
+        for offer in response:
+            print('process order')
+            #Todo: process active orders
+
+    def get_account_history(self, currency, start = None, end = None, limit = None, wallet = None):
+
+        post_data = {}
+        post_data['currency'] = currency
+        if start:
+            post_data['since'] = start # datetime object
+        if end:
+            post_data['until'] = end # datetime object
+        if limit:
+            post_data['limit'] = limit # integer
+        if start:
+            post_data['wallet'] = wallet # string 'trading' || 'exchange' || 'deposit'
+
+        # Todo: CONTINUE fix post data encoding problem
+
+        success, return_code, response = self.API.post_request(url_path='/history', post_params=post_data)
+
+        for entry in response:
+            print('process order')
+            #Todo: process active orders
 
     def get_day_returns(self):
         print('...retrieving 1 day returns of account')
