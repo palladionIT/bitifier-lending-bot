@@ -29,13 +29,27 @@ class BFXAPI(API):
     # Unauthenticated endpoints
     # =========================
 
-    def get_ticker(self):
+    def get_ticker(self, symbol):
         print('ticker')
-        # Todo implement ticker
 
-    def get_statistics(self):
+        api_path = '/pubticker/' + symbol
+
+        return self.get_request(url_path=self.generate_url(api_path))
+
+    def get_statistics(self, symbol, period=None, volume=None):
         print('stats')
-        # Todo implement stats
+
+        api_path = '/stats/' + symbol
+
+        url_params = {}
+
+        if period:
+            url_params['period'] = period  # datetime object
+
+        if volume:
+            url_params['volume'] = volume  # integer object - default 50
+
+        return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_fundingbook(self, currency, limit_bids = None, limit_asks = None):
         print('fundingbook')
@@ -60,7 +74,7 @@ class BFXAPI(API):
         url_params = {}
 
         if limit_bids:
-            url_params['limit_bids'] = limit_bids # datetime object
+            url_params['limit_bids'] = limit_bids # integer object - default 50
 
         if limit_asks:
             url_params['limit_asks'] = limit_asks # integer object - default 50
@@ -70,9 +84,20 @@ class BFXAPI(API):
 
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
-    def get_trades(self):
+    def get_trades(self, symbol, timestamp=None, limit_trades=None):
         print('trades')
-        # Todo implement trades
+
+        api_path = '/trades/' + symbol
+
+        url_params = {}
+
+        if timestamp:
+            url_params['timestamp'] = timestamp  # datetime object
+
+        if limit_trades:
+            url_params['limit_trades'] = limit_trades  # integer object - default 50
+
+        return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_lends(self, currency, timestamp = None, limit = None):
         print('lends')
@@ -91,11 +116,17 @@ class BFXAPI(API):
 
     def get_symbols(self):
         print('symbols')
-        # Todo implement symbols
 
-    def get_symbol_detail(self):
-        print('symbol detail')
-        # Todo implement symbol detail
+        api_path = '/symbols/'
+
+        return self.get_request(url_path=self.generate_url(api_path))
+
+    def get_symbols_details(self):
+        print('symbols details')
+
+        api_path = '/symbols_details/'
+
+        return self.get_request(url_path=self.generate_url(api_path))
 
     # =======================
     # Authenticated Endpoints

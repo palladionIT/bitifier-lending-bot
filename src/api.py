@@ -27,7 +27,7 @@ class API:
         return '&'.join(["%s=%s" % (k, parameters[k]) for k in keys])
 
     @staticmethod
-    def generate_url(url, parameters):
+    def generate_url(url, parameters=None):
         if parameters:
             url = "%s?%s" % (url, API.create_url_parameters(parameters))
 
@@ -52,7 +52,7 @@ class API:
             print('API ERROR - Could not decode JSON, possibly wrong API path.')
             return False, 404, None
 
-    def post_request(self, url_path, payload = None):
+    def post_request(self, url_path, payload=None):
         print('...performing POST request on API - ' + url_path)
         payload['nonce'] = self.nonce
         response = requests.post(self.BaseURL + url_path, headers=self.sign_payload(payload))
