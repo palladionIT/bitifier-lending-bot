@@ -19,6 +19,20 @@ class API:
     def byte_to_obj(response):
         return json.loads(bytes.decode(response.content))
 
+    @staticmethod
+    def create_url_parameters(parameters):
+        keys = list(parameters.keys())
+        keys.sort()
+
+        return '&'.join(["%s=%s" % (k, parameters[k]) for k in keys])
+
+    @staticmethod
+    def generate_url(url, parameters):
+        if parameters:
+            url = "%s?%s" % (url, API.create_url_parameters(parameters))
+
+        return url
+
     @property
     def nonce(self):
         return str(time.time())

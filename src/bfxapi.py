@@ -37,21 +37,57 @@ class BFXAPI(API):
         print('stats')
         # Todo implement stats
 
-    def get_fundingbook(self):
+    def get_fundingbook(self, currency, limit_bids = None, limit_asks = None):
         print('fundingbook')
-        # Todo implement fundingbook
 
-    def get_orderbook(self):
+        api_path = '/lendbook/' + currency
+
+        url_params = {}
+
+        if limit_bids:
+            url_params['limit_bids'] = limit_bids # datetime object
+
+        if limit_asks:
+            url_params['limit_asks'] = limit_asks # integer object - default 50
+
+        return self.get_request(url_path=self.generate_url(api_path, url_params))
+
+    def get_orderbook(self, symbol, limit_bids = None, limit_asks = None, group = None):
         print('orderbook')
-        # Todo implement orderbook
+
+        api_path = '/book/' + symbol
+
+        url_params = {}
+
+        if limit_bids:
+            url_params['limit_bids'] = limit_bids # datetime object
+
+        if limit_asks:
+            url_params['limit_asks'] = limit_asks # integer object - default 50
+
+        if group:
+            url_params['group'] = group # integer 0 / 1 - groups orders by price
+
+        return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_trades(self):
         print('trades')
         # Todo implement trades
 
-    def get_lends(self):
+    def get_lends(self, currency, timestamp = None, limit = None):
         print('lends')
-        # Todo implement lends
+
+        api_path = '/lends/' + currency
+
+        url_params = {}
+
+        if timestamp:
+            url_params['timestamp'] = timestamp # datetime object
+
+        if limit:
+            url_params['limit_lends'] = limit # integer object - default 50
+
+        return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_symbols(self):
         print('symbols')
