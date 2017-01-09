@@ -116,3 +116,13 @@ class Account:
         success, return_code, response = self.API.funding_active_funding_used()
         print('RESULT - success: ' + str(success)
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        print('\n\n=========GET REQUESTS========\n\n')
+
+        success, return_code, response = self.API.get_lends(currency='USD', limit=500)
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_fundinsgbook(currency='USD', limit_bids=500, limit_asks=0)
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
