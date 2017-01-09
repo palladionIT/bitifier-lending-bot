@@ -5,7 +5,7 @@ import time
 import json
 import base64
 
-from .api import API as api
+from .bfxapi import BFXAPI as bfxapi
 from .databaseconnector import DatabaseConnector as db
 
 class Account:
@@ -22,29 +22,22 @@ class Account:
         self.UserID = id
         self.UserMail = mail
         self.UserName = name
-        self.API = api(key, secret)
+        self.API = bfxapi(key, secret)
 
     def check_api_connection(self):
         print('...checking login state of account')
 
-        api_path = '/account_infos'
-        valid = True
-
-        success, return_code = self.API.get_request(url_path='/symbols')[0:2]
-        valid = valid and success
-        success, return_code = self.API.post_request(url_path=api_path)[0:2]
-
-        return valid and success
+        return self.API.check_authentication()
 
     def get_active_offers(self):
-        success, return_code, response = self.API.post_request(url_path='/offers')
+        success, return_code, response = self.API.funding_active_offer()
 
         for offer in response:
             print('process order')
             #Todo: process active orders
 
     def get_taken_offers(self):
-        success, return_code, response = self.API.post_request(url_path='/credits')
+        success, return_code, response = self.API.funding_active_funding_used()
 
         for offer in response:
             print('process order')
@@ -52,20 +45,7 @@ class Account:
 
     def get_account_history(self, currency, start = None, end = None, limit = None, wallet = None):
 
-        post_data = {}
-        post_data['currency'] = currency
-        if start:
-            post_data['since'] = start # datetime object
-        if end:
-            post_data['until'] = end # datetime object
-        if limit:
-            post_data['limit'] = limit # integer
-        if start:
-            post_data['wallet'] = wallet # string 'trading' || 'exchange' || 'deposit'
-
-        # Todo: CONTINUE fix post data encoding problem
-
-        success, return_code, response = self.API.post_request(url_path='/history', post_params=post_data)
+        success, return_code, response = self.API.history_balance(currency='usd')
 
         for entry in response:
             print('process order')
@@ -86,3 +66,53 @@ class Account:
     def get_return_info(self):
         print('...retrieving full return information of account')
         # TODO: access database
+
+
+    def api_test(self):
+        self.get_active_offers()
+        self.get_taken_offers()
+        self.get_account_history('usd')
+        print('TEST - history deposit withdraw')
+        success, return_code, response = self.API.history_deposit_withdraw(currency='usd')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        print('TEST - history past trades')
+        success, return_code, response = self.API.history_past_trades(symbol='BTCUSD',timestamp=str(time.time()-1000000000))
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+        print('TEST - history past trades')
+
+        success, return_code, response = self.API.funding_active_funding_unused()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.funding_taken()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        # Todo: test when funding available
+        #success, return_code, response = self.API.funding_new_offer('USD', 300, 40, 2, 'lend')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        # Todo: test when offer available
+        #success, return_code, response = self.API.funding_cancel_offer(10000)
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.funding_offer_status(10000)
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.funding_active_credit()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.funding_active_offer()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.funding_active_funding_used()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))

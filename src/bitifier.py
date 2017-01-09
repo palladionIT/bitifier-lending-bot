@@ -80,9 +80,12 @@ class Bitifier:
     def run_frequent_task(self):
         for account in self.Accounts:
             if account.check_api_connection():
-                account.get_active_offers()
-                account.get_taken_offers()
-                account.get_account_history('usd')
+                #account.get_active_offers()
+                #account.get_taken_offers()
+                #account.get_account_history('usd')
+                # Todo: do tasks
+                account.api_test()
+                pass
 
 if __name__ == '__main__':
     Bitifier()
