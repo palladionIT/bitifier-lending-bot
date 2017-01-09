@@ -123,6 +123,30 @@ class Account:
         print('RESULT - success: ' + str(success)
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
 
-        success, return_code, response = self.API.get_fundinsgbook(currency='USD', limit_bids=500, limit_asks=0)
+        success, return_code, response = self.API.get_fundingbook(currency='USD', limit_bids=500, limit_asks=0)
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_orderbook('btcusd')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_symbols()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_symbols_details()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_trades('btcusd')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_ticker('btcusd')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_statistics('btcusd')
         print('RESULT - success: ' + str(success)
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
