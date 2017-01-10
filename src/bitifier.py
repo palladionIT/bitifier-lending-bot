@@ -84,8 +84,19 @@ class Bitifier:
                 #account.get_taken_offers()
                 #account.get_account_history('usd')
                 # Todo: do tasks
-                account.api_test()
-                pass
+                #account.api_test()
+
+                funds = account.get_available_funds()
+
+                if funds['usd'] < 50:
+                    del funds['usd']
+                if account.usd_from_btc(funds['btc']) < 50:
+                    del funds['btc']
+
+                account.offer_funding(funds)
+
+    def offer_funding(self, funds):
+        pass
 
 if __name__ == '__main__':
     Bitifier()

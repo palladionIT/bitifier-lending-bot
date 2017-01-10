@@ -29,6 +29,10 @@ class Account:
 
         return self.API.check_authentication()
 
+    def offer_funding(self, funds):
+        for fund in funds:
+            print('fund!')
+
     def get_active_offers(self):
         success, return_code, response = self.API.funding_active_offer()
 
@@ -67,6 +71,24 @@ class Account:
         print('...retrieving full return information of account')
         # TODO: access database
 
+    def get_available_funds(self):
+        success, return_code, response = self.API.get_wallet_balance()
+
+        funds = {}
+
+        if success:
+            for info in response:
+                if info['type'] == 'deposit':
+                    if info['currency'] == 'usd':
+                        funds['usd'] = float(info['available'])
+                    if info['currency'] == 'btc':
+                        funds['btc'] = float(info['available'])
+
+        return funds
+
+    def usd_from_btc(self, btc):
+        btc_price = self.API.get_ticker('btcusd')[2]
+        return btc * float(btc_price['last_price'])
 
     def api_test(self):
         self.get_active_offers()
@@ -148,5 +170,13 @@ class Account:
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
 
         success, return_code, response = self.API.get_statistics('btcusd')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_wallet_balance()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_summary()
         print('RESULT - success: ' + str(success)
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
