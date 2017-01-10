@@ -13,15 +13,11 @@ class BFXAPI(API):
         print('...checking login state of account')
 
         valid = True
-        api_path = '/account_infos'
-
-        payload = {'request': '/' + self.APIVersion + api_path}
 
         success, return_code = self.get_request(url_path='/symbols')[0:2]
         valid = valid and success
 
-        success, return_code = self.post_request(url_path=api_path,
-                                                 payload=payload)[0:2]
+        success, return_code = self.get_acc_info()[0:2]
 
         return valid and success
 
@@ -134,11 +130,23 @@ class BFXAPI(API):
 
     def get_acc_info(self):
         print('account info')
-        # Todo implement symbol detail
+
+        api_path = '/account_infos'
+
+        payload = {'request': '/' + self.APIVersion + api_path}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_summary(self):
         print('30d summary')
-        # Todo implement symbol detail
+
+        api_path = '/summary'
+
+        payload = {'request': '/' + self.APIVersion + api_path}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_deposit_address(self):
         print('deposit')
@@ -151,6 +159,16 @@ class BFXAPI(API):
     def get_margin_info(self):
         print('margin info')
         # Todo implement symbol detail
+
+    def get_wallet_balance(self):
+        print('wallet balance')
+
+        api_path = '/balances'
+
+        payload = {'request': '/' + self.APIVersion + api_path}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_wallet_transfer(self):
         print('wallet balance transfer')
