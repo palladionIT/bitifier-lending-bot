@@ -34,8 +34,8 @@ class Account:
     max_loan_spread = {'usd': 100000, 'btc': 100000}
     spread_cnt = {'usd': 5, 'btc': 3}
     min_lend_rate = {'usd': 0.05, 'btc': 0.045}
-    high_hold_amount = {'usd': 200, 'btc': 0.1}
-    high_hold_limit = {'usd': 0.2, 'btc': 0.1}  # Interest rate / year
+    high_hold_amount = {'usd': 150, 'btc': 0.1}
+    high_hold_limit = {'usd': 0.15, 'btc': 0.1}  # Interest rate / year
     high_hold_threshold = {'usd': 40, 'btc': 40}
 
     def __init__(self, id, mail, name, key, secret):
@@ -162,7 +162,7 @@ class Account:
 
                     if split_cnt >= 1:
                         lendbook_aggregate = 0
-                        split_climb = ((self.max_loan_spread[currency] - self.min_loan_spread[currency]) / (split_cnt -1 ))
+                        split_climb = ((self.max_loan_spread[currency] - self.min_loan_spread[currency]) / (split_cnt - 1 )) if (split_cnt -1 ) > 0 else 0
                         next_loan = self.min_loan_spread[currency]
 
                         min_rate_annual = self.min_lend_rate[currency] * 365
@@ -177,7 +177,7 @@ class Account:
                                 next_loan += split_climb
                                 cnt += 1
 
-                            if cnt >= split_cnt:
+                            if cnt > split_cnt:
                                 break
             offers[currency] = loans
         return offers
