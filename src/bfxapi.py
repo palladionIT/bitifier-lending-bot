@@ -26,14 +26,14 @@ class BFXAPI(API):
     # =========================
 
     def get_ticker(self, symbol):
-        print('ticker')
+        # print('ticker')
 
         api_path = '/pubticker/' + symbol
 
         return self.get_request(url_path=self.generate_url(api_path))
 
     def get_statistics(self, symbol, period=None, volume=None):
-        print('stats')
+        # print('stats')
 
         api_path = '/stats/' + symbol
 
@@ -48,7 +48,7 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_fundingbook(self, currency, limit_bids = None, limit_asks = None):
-        print('fundingbook')
+        # print('fundingbook')
 
         api_path = '/lendbook/' + currency
 
@@ -63,7 +63,7 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_orderbook(self, symbol, limit_bids = None, limit_asks = None, group = None):
-        print('orderbook')
+        # print('orderbook')
 
         api_path = '/book/' + symbol
 
@@ -81,7 +81,7 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_trades(self, symbol, timestamp=None, limit_trades=None):
-        print('trades')
+        # print('trades')
 
         api_path = '/trades/' + symbol
 
@@ -96,7 +96,7 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_lends(self, currency, timestamp = None, limit = None):
-        print('lends')
+        # print('lends')
 
         api_path = '/lends/' + currency
 
@@ -111,14 +111,14 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_symbols(self):
-        print('symbols')
+        # print('symbols')
 
         api_path = '/symbols/'
 
         return self.get_request(url_path=self.generate_url(api_path))
 
     def get_symbols_details(self):
-        print('symbols details')
+        # print('symbols details')
 
         api_path = '/symbols_details/'
 
@@ -129,7 +129,7 @@ class BFXAPI(API):
     # =======================
 
     def get_acc_info(self):
-        print('account info')
+        # print('account info')
 
         api_path = '/account_infos'
 
@@ -139,7 +139,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def get_summary(self):
-        print('30d summary')
+        # print('30d summary')
 
         api_path = '/summary'
 
@@ -161,7 +161,7 @@ class BFXAPI(API):
         # Todo implement symbol detail
 
     def get_wallet_balance(self):
-        print('wallet balance')
+        # print('wallet balance')
 
         api_path = '/balances'
 
@@ -237,7 +237,7 @@ class BFXAPI(API):
     # ==========================
 
     def history_balance(self, currency, start = None, end = None, limit = None, wallet = None):
-        print('balance history')
+        # print('balance history')
 
         api_path = '/history'
 
@@ -257,7 +257,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def history_deposit_withdraw(self, currency, start = None, end = None, limit = None, wallet = None):
-        print('deposit withdrawal history')
+        # print('deposit withdrawal history')
 
         api_path = '/history/movements'
 
@@ -277,7 +277,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def history_past_trades(self, symbol, timestamp, end = None, limit = None, reverse = None):
-        print('past trades history')
+        # print('past trades history')
 
         api_path = '/mytrades'
 
@@ -300,7 +300,7 @@ class BFXAPI(API):
     # ==============================
 
     def funding_new_offer(self, currency, amount, rate, period, direction):
-        print('new offer funding')
+        # print('new offer funding')
 
         api_path = '/offer/new'
 
@@ -315,7 +315,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_cancel_offer(self, id):
-        print('cancel offer funding')
+        # print('cancel offer funding')
 
         api_path = '/offer/cancel'
 
@@ -326,7 +326,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_offer_status(self, id):
-        print('status offer funding')
+        # print('status offer funding')
 
         api_path = '/offer/status'
 
@@ -337,7 +337,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_active_credit(self):
-        print('active_credit funding')
+        # print('active_credit funding')
 
         api_path = '/credits'
 
@@ -347,7 +347,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_active_offer(self):
-        print('active offer funding')
+        # print('active offer funding')
 
         api_path = '/offers'
 
@@ -357,7 +357,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_active_funding_used(self):
-        print('active offer used funding')
+        # print('active offer used funding')
 
         api_path = '/taken_funds'
 
@@ -367,7 +367,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_active_funding_unused(self):
-        print('active offer unused funding')
+        # print('active offer unused funding')
 
         api_path = '/unused_taken_funds'
 
@@ -377,7 +377,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_taken(self):
-        print('taken funding')
+        # print('taken funding')
 
         api_path = '/total_taken_funds'
 
@@ -387,7 +387,7 @@ class BFXAPI(API):
                                  payload=payload)
 
     def funding_close(self, id):
-        print('close funding')
+        # print('close funding')
 
         api_path = '/funding/close'
 
