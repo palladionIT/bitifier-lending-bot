@@ -5,6 +5,7 @@
 import getpass
 import re
 import time
+import os
 
 from src.account import Account
 from src.databaseconnector import DatabaseConnector
@@ -18,7 +19,7 @@ class Bitifier:
     Accounts = []
 
     def __init__(self):
-        print('...setting up proxy')
+        print('...setting up bitifier bot')
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
         #passphrase = getpass.getpass('Enter the database password: ')
@@ -51,7 +52,6 @@ class Bitifier:
             try:
                 self.DBConnector.User.get(self.DBConnector.User.name == username)
             except self.DBConnector.User.DoesNotExist:
-                print(username)
                 self.DBConnector.User.create(name=username,
                                              email=mail,
                                              password=userpass,
@@ -60,12 +60,19 @@ class Bitifier:
                                              status=True)
         else:
             for acc in self.DBConnector.User.select():
-                self.Accounts.append(Account(acc.id, acc.name, acc.email, acc.bfxapikey, acc.bfxapisec))
+                self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec))
 
-        while 1:
-            print('Running 10 minute task')
-            self.run_frequent_task()
-            time.sleep(600)
+        child_pid = os.fork()
+
+        if child_pid == 0:
+            while 1:
+                print('Running 10 minute task')
+                self.run_frequent_task()
+                print('Finished Running 10 minute task')
+                time.sleep(600)
+        else:
+            print('Child PID: ' + str(child_pid))
+            pass
 
     def first_run(self):
         print('...checking if first run')
@@ -82,6 +89,7 @@ class Bitifier:
     def run_frequent_task(self):
         for account in self.Accounts:
             if account.check_api_connection():
+                print('......successful login for - ' + account.UserName)
                 account.offer_funding()
 
     def offer_funding(self, funds):

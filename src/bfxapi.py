@@ -10,7 +10,7 @@ class BFXAPI(API):
     # =======================
 
     def check_authentication(self):
-        print('...checking login state of account')
+        # print('...checking login state of account')
 
         valid = True
 
