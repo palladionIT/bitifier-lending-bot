@@ -53,6 +53,7 @@ class Account:
 
     def offer_funding(self):
 
+        self.clear_active_offers()
         self.get_available_funds()
         self.load_exchange_rates()
         self.calculate_limts()
@@ -60,19 +61,35 @@ class Account:
 
         for currency, loans in offers.items():  # Todo: write information to database
             for loan in loans:
-                self.API.funding_new_offer(currency=currency,
-                                           amount=loan['amt'],
-                                           rate=loan['rate'],
-                                           period=loan['time'],
-                                           direction='loan')
+                success, return_code, response = self.API.funding_new_offer(currency=currency,
+                                                                            amount=loan['amt'],
+                                                                            rate=loan['rate'],
+                                                                            period=loan['time'],
+                                                                            direction='lend')
+
+                if not success:
+                    print('Error ' + return_code + ' creating funding lends.')
+                    print (str(response))
+
+    def clear_active_offers(self):
+        offers = self.get_active_offers()
+
+        for offer in offers:
+            success, return_code, response = self.API.funding_cancel_offer(offer['id'])
+
+            if not success:
+                print('Error ' + return_code + ' cancelling active funding lends.')
+                print(str(response))
 
 
     def get_active_offers(self):
         success, return_code, response = self.API.funding_active_offer()
 
-        for offer in response:
-            print('process order')
-            #Todo: process active orders
+        if not success:
+            print('Error ' + return_code + ' retrieving active funding lends.')
+            print(str(response))
+        else:
+            return response
 
     def get_taken_offers(self):
         success, return_code, response = self.API.funding_active_funding_used()
@@ -118,20 +135,17 @@ class Account:
         amount_bids = 0
         offers = {}
 
-        # Todo: update loan spread interval for currencies
-
         for currency, balance in self.balance.items():
             loans = []
-            if balance != self.limit[currency]:  # Todo: fix this condition to >=
+            if balance >= self.limit[currency]:
                 cnt = 1
                 available = balance
-                available = 500
 
                 if self.high_hold_amount[currency] > self.limit[currency]:
                     available -= self.high_hold_amount[currency]
 
-                    loans.append({'amt': balance if self.high_hold_amount[currency] > balance else self.high_hold_amount[currency],
-                                  'rate': self.high_hold_limit[currency] * 365,
+                    loans.append({'amt': str(balance if self.high_hold_amount[currency] > balance else self.high_hold_amount[currency]),
+                                  'rate': str(self.high_hold_limit[currency] * 365),
                                   'time': 30
                                   })
 
@@ -142,7 +156,7 @@ class Account:
 
                     split_cnt = self.spread_cnt[currency]
                     split_amount = math.floor((available / split_cnt) * 100) / 100
-                    while split_amount < self.limit[currency]:
+                    while split_amount < self.limit[currency]:  # Todo: also implement min value split behaviour
                         split_cnt -= 1
                         split_amount = math.floor((available / split_cnt) * 100) / 100
 
@@ -156,12 +170,15 @@ class Account:
                         for book_entry in fundbook['asks']:
                             lendbook_aggregate += float(book_entry['amount'])
                             while lendbook_aggregate >= next_loan and cnt <= split_cnt:
-                                loans.append({'amt': split_amount,
-                                              'rate': float(book_entry['rate']) - 0.0001 if (float(book_entry['rate']) - 0.0001) > min_rate_annual else min_rate_annual,
+                                loans.append({'amt': str(split_amount),
+                                              'rate': str(float(book_entry['rate']) - 0.0001 if (float(book_entry['rate']) - 0.0001) > min_rate_annual else min_rate_annual),
                                               'time': 30 if self.high_hold_threshold[currency] > 0 and float(book_entry['rate']) > self.high_hold_threshold[currency] * 365 else 2
                                               })
                                 next_loan += split_climb
                                 cnt += 1
+
+                            if cnt >= split_cnt:
+                                break
             offers[currency] = loans
         return offers
 
@@ -170,9 +187,6 @@ class Account:
         return btc * float(btc_price['last_price'])
 
     def load_exchange_rates(self):
-        # Todo: get all symbols
-        # Todo: get exchangerates for all symbols
-        # Todo: set rate for all symbols
         symbols = self.API.get_symbols()[2]
         for symbol in symbols:
             if symbol[3:] == 'usd':

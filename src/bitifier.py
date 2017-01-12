@@ -3,11 +3,14 @@
 #from proxy.gpgpu.OCLHandler import OCLHandler
 #from .database.DatabaseConnector import DatabaseConnector
 import re
+import time
+import getpass
+
 from src.databaseconnector import DatabaseConnector
 from src.account import Account
 
-import getpass
-
+# Todo: add database storage for analysis
+# Todo: add web interface for easy overview
 
 class Bitifier:
     DBConnector = None
@@ -58,12 +61,10 @@ class Bitifier:
             for acc in self.DBConnector.User.select():
                 self.Accounts.append(Account(acc.id, acc.name, acc.email, acc.bfxapikey, acc.bfxapisec))
 
-        #for account in self.Accounts:
-        #    account.check_api_connection()
-
-        self.run_frequent_task()
-        # Todo: focus on simple re-offering
-        # Todo: do analysis later
+        while 1:
+            print('Running 10 minute task')
+            self.run_frequent_task()
+            time.sleep(600)
 
     def first_run(self):
         print('...checking if first run')
@@ -80,11 +81,6 @@ class Bitifier:
     def run_frequent_task(self):
         for account in self.Accounts:
             if account.check_api_connection():
-                #account.get_active_offers()
-                #account.get_taken_offers()
-                #account.get_account_history('usd')
-                # Todo: do tasks
-                #account.api_test()
                 account.offer_funding()
 
     def offer_funding(self, funds):
