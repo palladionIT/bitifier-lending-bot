@@ -1,9 +1,9 @@
-#import proxy
+from src.bitifier import Bitifier
 
 def main():
     # Start all modules and servers
     print('Initializing...')
-    #proxy.main()
+    bot = Bitifier()
 
 if __name__ == '__main__':
     main()

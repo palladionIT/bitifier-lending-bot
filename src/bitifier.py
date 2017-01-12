@@ -2,12 +2,13 @@
 
 #from proxy.gpgpu.OCLHandler import OCLHandler
 #from .database.DatabaseConnector import DatabaseConnector
+import getpass
 import re
 import time
-import getpass
 
-from src.databaseconnector import DatabaseConnector
 from src.account import Account
+from src.databaseconnector import DatabaseConnector
+
 
 # Todo: add database storage for analysis
 # Todo: add web interface for easy overview
