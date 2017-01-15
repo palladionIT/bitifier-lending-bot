@@ -158,12 +158,17 @@ class Account:
                             do_high_lend = False
 
                 if self.high_hold_amount[currency] > self.limit[currency] and do_high_lend:
-                    available -= self.high_hold_amount[currency]
+                    # If we have enough funds place order
+                    if available > self.high_hold_amount[currency]:
+                        available -= self.high_hold_amount[currency]
 
-                    loans.append({'amt': str(balance if self.high_hold_amount[currency] > balance else self.high_hold_amount[currency]),
-                                  'rate': str(self.high_hold_limit[currency] * 365),
-                                  'time': 30
-                                  })
+                        loans.append({'amt': str(balance if self.high_hold_amount[currency] > balance else self.high_hold_amount[currency]),
+                                      'rate': str(self.high_hold_limit[currency] * 365),
+                                      'time': 30
+                                      })
+                    # Else reserve the money and wait
+                    else:
+                        available -= self.high_hold_amount[currency]
 
                 if available > self.limit[currency]:
 
