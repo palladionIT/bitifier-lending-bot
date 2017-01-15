@@ -141,7 +141,23 @@ class Account:
                 cnt = 1
                 available = balance
 
-                if self.high_hold_amount[currency] > self.limit[currency]:
+                fundbook = self.API.get_fundingbook(currency=currency,
+                                                    limit_asks=str(amount_asks),
+                                                    limit_bids=str(amount_bids))[2]
+
+                # Calculate if lendbook is even in the neighbourhood of our desired high lend position
+                do_high_lend = True
+                lendbook_aggregate = 0
+                for book_entry in fundbook['asks']:
+                    lendbook_aggregate += float(book_entry['amount'])
+                    if float(book_entry['rate']) >= self.high_hold_limit[currency] * 365:
+                        # Todo more sophisticated distance calculation
+                        if lendbook_aggregate <= 3 * self.max_loan_spread[currency]:
+                            pass
+                        else:
+                            do_high_lend = False
+
+                if self.high_hold_amount[currency] > self.limit[currency] and do_high_lend:
                     available -= self.high_hold_amount[currency]
 
                     loans.append({'amt': str(balance if self.high_hold_amount[currency] > balance else self.high_hold_amount[currency]),
@@ -150,9 +166,6 @@ class Account:
                                   })
 
                 if available > self.limit[currency]:
-                    fundbook = self.API.get_fundingbook(currency=currency,
-                                                        limit_asks=str(amount_asks),
-                                                        limit_bids=str(amount_bids))[2]
 
                     split_cnt = self.spread_cnt[currency]
                     split_amount = math.floor((available / split_cnt) * 100) / 100

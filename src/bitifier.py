@@ -62,7 +62,8 @@ class Bitifier:
             for acc in self.DBConnector.User.select():
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec))
 
-        child_pid = os.fork()
+        child_pid = 0
+        # child_pid = os.fork()
 
         if child_pid == 0:
             while 1:
