@@ -222,7 +222,7 @@ class Account:
         pass
 
     def api_test(self):
-        self.get_active_offers()
+        '''self.get_active_offers()
         self.get_taken_offers()
         self.get_account_history('usd')
         print('TEST - history deposit withdraw')
@@ -309,5 +309,33 @@ class Account:
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
 
         success, return_code, response = self.API.get_summary()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))'''
+
+        success, return_code, response = self.API.get_deposit_address('bitcoin', 'deposit')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_api_key_perm()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.get_margin_info()
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.perform_wallet_transfer(10, 'btc', 'exchange', 'deposit')
+        print('RESULT - success: ' + str(success)
+              + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
+
+        success, return_code, response = self.API.perform_wallet_withdrawal('bitcoin',
+                                                                            'deposit',
+                                                                            '1000',
+                                                                            '1DKwqRhDmVyHJDL4FUYpDmQMYA3Rsxtvur',
+                                                                            '123456',
+                                                                            'Phantank',
+                                                                            'Phantasyland 7',
+                                                                            'Atlantis',
+                                                                            'Mars')
         print('RESULT - success: ' + str(success)
               + ' | response code: ' + str(return_code) + ' | response: ' + str(response))
