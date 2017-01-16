@@ -148,17 +148,41 @@ class BFXAPI(API):
         return self.post_request(url_path=api_path,
                                  payload=payload)
 
-    def get_deposit_address(self):
-        print('deposit')
-        # Todo implement symbol detail
+    '''
+    'Mastercoin' currency only works for verified accounts.
+    '''
+    def get_deposit_address(self, method, wallet, renew = 0):
+        # print('deposit')
+
+        api_path = '/deposit/new'
+
+        payload = {'request': '/' + self.APIVersion + api_path,
+                   'method': method,
+                   'wallet_name': wallet,
+                   'renew': renew}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_api_key_perm(self):
         print('get api key permissions')
-        # Todo implement symbol detail
+
+        api_path = '/key_info'
+
+        payload = {'request': '/' + self.APIVersion + api_path}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_margin_info(self):
         print('margin info')
-        # Todo implement symbol detail
+
+        api_path = '/margin_infos'
+
+        payload = {'request': '/' + self.APIVersion + api_path}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     def get_wallet_balance(self):
         # print('wallet balance')
@@ -170,13 +194,78 @@ class BFXAPI(API):
         return self.post_request(url_path=api_path,
                                  payload=payload)
 
-    def get_wallet_transfer(self):
-        print('wallet balance transfer')
-        # Todo implement symbol detail
+    def perform_wallet_transfer(self, amount, currency, walletfrom, walletto):
+        #print('wallet balance transfer')
 
-    def get_wallet_withdrawal(self):
-        print('wallet withdrawal')
-        # Todo implement symbol detail
+        api_path = '/transfer'
+
+        payload = {'request': '/' + self.APIVersion + api_path,
+                   'amount': amount,
+                   'currency': currency,
+                   'walletfrom': walletfrom,
+                   'walletto': walletto}
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
+
+    def perform_wallet_withdrawal(self,
+                                  type,
+                                  wallet,
+                                  amount,
+                                  address,
+                                  account_number,
+                                  bank_name,
+                                  bank_address,
+                                  bank_city,
+                                  bank_country,
+                                  express = None,
+                                  account_name = None,
+                                  detail_payment = None,
+                                  intermed_bank_name = None,
+                                  intermed_bank_address = None,
+                                  intermed_bank_city = None,
+                                  intermed_bank_country = None,
+                                  intermed_bank_account = None,
+                                  intermed_bank_swift = None,
+                                  paymend_id = None):
+        #print('wallet withdrawal')
+
+        api_path = '/withdraw'
+
+        payload = {'request': '/' + self.APIVersion + api_path,
+                   'withdrawal_type': type,
+                   'walletselected': wallet,
+                   'amount': amount,
+                   'address': address,
+                   'account_number': account_number,
+                   'bank_name': bank_name,
+                   'bank_address': bank_address,
+                   'bank_city': bank_city,
+                   'bank_country': bank_country}
+
+        if express:
+            payload['expressWire'] = express
+        if account_name:
+            payload['account_name'] = account_name
+        if detail_payment:
+            payload['detail_payment'] = detail_payment
+        if intermed_bank_name:
+            payload['intermediary_bank_name'] = intermed_bank_name
+        if intermed_bank_address:
+            payload['intermediary_bank_address'] = intermed_bank_address
+        if intermed_bank_city:
+            payload['intermediary_bank_city'] = intermed_bank_city
+        if intermed_bank_country:
+            payload['intermediary_bank_country'] = intermed_bank_country
+        if intermed_bank_account:
+            payload['intermediary_bank_account'] = intermed_bank_account
+        if intermed_bank_swift:
+            payload['intermediary_bank_swift'] = intermed_bank_swift
+        if paymend_id:
+            payload['payment_id'] = paymend_id
+
+        return self.post_request(url_path=api_path,
+                                 payload=payload)
 
     # ======================
     # Authenticated - Orders
