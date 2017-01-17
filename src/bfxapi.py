@@ -26,15 +26,11 @@ class BFXAPI(API):
     # =========================
 
     def get_ticker(self, symbol):
-        # print('ticker')
-
         api_path = '/pubticker/' + symbol
 
         return self.get_request(url_path=self.generate_url(api_path))
 
     def get_statistics(self, symbol, period=None, volume=None):
-        # print('stats')
-
         api_path = '/stats/' + symbol
 
         url_params = {}
@@ -48,8 +44,6 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_fundingbook(self, currency, limit_bids = None, limit_asks = None):
-        # print('fundingbook')
-
         api_path = '/lendbook/' + currency
 
         url_params = {}
@@ -63,8 +57,6 @@ class BFXAPI(API):
         return self.get_request(url_path=self.generate_url(api_path, url_params))
 
     def get_orderbook(self, symbol, limit_bids = None, limit_asks = None, group = None):
-        # print('orderbook')
-
         api_path = '/book/' + symbol
 
         url_params = {}
@@ -185,8 +177,6 @@ class BFXAPI(API):
                                  payload=payload)
 
     def get_wallet_balance(self):
-        # print('wallet balance')
-
         api_path = '/balances'
 
         payload = {'request': '/' + self.APIVersion + api_path}
@@ -195,8 +185,6 @@ class BFXAPI(API):
                                  payload=payload)
 
     def perform_wallet_transfer(self, amount, currency, walletfrom, walletto):
-        #print('wallet balance transfer')
-
         api_path = '/transfer'
 
         payload = {'request': '/' + self.APIVersion + api_path,
