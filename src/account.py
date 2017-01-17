@@ -33,7 +33,7 @@ class Account:
     min_loan_spread = {'usd': 25000, 'btc': 25000}
     max_loan_spread = {'usd': 100000, 'btc': 100000}
     spread_cnt = {'usd': 5, 'btc': 3}
-    min_lend_rate = {'usd': 0.05, 'btc': 0.045}
+    min_lend_rate = {'usd': 0.05, 'btc': 0.0175}
     high_hold_amount = {'usd': 150, 'btc': 0.1}
     high_hold_limit = {'usd': 0.15, 'btc': 0.1}  # Interest rate / year
     high_hold_threshold = {'usd': 40, 'btc': 40}
@@ -214,6 +214,8 @@ class Account:
     def calculate_limts(self):
         for currency, rate in self.exchange_rate.items():
             self.limit[currency] = self.limit['usd'] / rate
+            self.min_loan_spread[currency] = self.min_loan_spread['usd'] / rate
+            self.max_loan_spread[currency] = self.max_loan_spread['usd'] / rate
 
     def calculate_spread_limits(self):
         # Todo: iterated all cryptocurrencies
