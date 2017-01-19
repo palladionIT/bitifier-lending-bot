@@ -45,23 +45,32 @@ class API:
 
     def get_request(self, url_path):
         print('...performing GET request on API - ' + url_path)
-        response = requests.get(self.BaseURL + url_path)
         try:
-            return response.ok, response.status_code, self.byte_to_obj(response)
-        except json.JSONDecodeError:
-            print('API ERROR - Could not decode JSON, possibly wrong API path.')
-            return False, 404, None
+            response = requests.get(self.BaseURL + url_path)
+            try:
+                return response.ok, response.status_code, self.byte_to_obj(response)
+            except json.JSONDecodeError:
+                print('API ERROR - Could not decode JSON, possibly wrong API path.')
+                return False, 404, None
+        except ConnectionError as e :
+            print('CONNECTION ERROR - a connection error occurred during get request')
+            return False, 503, None
 
     def post_request(self, url_path, payload=None):
         print('...performing POST request on API - ' + url_path)
         payload['nonce'] = self.nonce
-        response = requests.post(self.BaseURL + url_path, headers=self.sign_payload(payload))
 
         try:
-            return response.ok, response.status_code, self.byte_to_obj(response)
-        except json.JSONDecodeError:
-            print('API ERROR - Could not decode JSON, possibly wrong API path.')
-            return False, 404, None
+            response = requests.post(self.BaseURL + url_path, headers=self.sign_payload(payload))
+
+            try:
+                return response.ok, response.status_code, self.byte_to_obj(response)
+            except json.JSONDecodeError:
+                print('API ERROR - Could not decode JSON, possibly wrong API path.')
+                return False, 404, None
+        except ConnectionError as e:
+            print('CONNECTION ERROR - a connection error occurred during post request')
+            return False, 503, None
 
     def sign_payload(self, payload):
         j = json.dumps(payload)
