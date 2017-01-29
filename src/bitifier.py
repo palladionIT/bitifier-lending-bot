@@ -97,7 +97,8 @@ class Bitifier:
     def offer_funding(self, funds):
         pass
 
-    def load_config(self, acc_id):
+    @staticmethod
+    def load_config(acc_id):
         config = {}
 
         account = 'acc_' + str(acc_id)
