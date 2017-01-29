@@ -1,4 +1,4 @@
-#from configparser import ConfigParser
+from configparser import ConfigParser
 
 #from proxy.gpgpu.OCLHandler import OCLHandler
 #from .database.DatabaseConnector import DatabaseConnector
@@ -60,7 +60,7 @@ class Bitifier:
                                              status=True)
         else:
             for acc in self.DBConnector.User.select():
-                self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec))
+                self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
 
         child_pid = 0
         # child_pid = os.fork()
@@ -91,10 +91,31 @@ class Bitifier:
         for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
+                account.api_test()
                 account.offer_funding()
 
     def offer_funding(self, funds):
         pass
+
+    def load_config(self, acc_id):
+        config = {}
+
+        account = 'acc_' + str(acc_id)
+
+        parser = ConfigParser()
+        parser.read('config/config.ini')
+
+        for name, value in parser.items(account):
+            item = name.split('-')
+            currency = item[-1]
+            item = item[0]
+
+            if item not in config:
+                config[item] = {}
+
+            config[item][currency] = value
+
+        return config
 
 if __name__ == '__main__':
     Bitifier()
