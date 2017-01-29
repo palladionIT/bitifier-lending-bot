@@ -18,6 +18,8 @@ class Bitifier:
     DBConnector = None
     Accounts = []
 
+    run_counter = 0
+
     def __init__(self):
         print('...setting up bitifier bot')
 
@@ -68,6 +70,12 @@ class Bitifier:
         if child_pid == 0:
             while 1:
                 print('Running 10 minute task')
+                self.run_counter += 1
+
+                if self.run_counter >= 6:
+                    for account in self.Accounts:
+                        account.update_config(self.load_config(account.UserID))
+                        self.run_counter = 0
                 self.run_frequent_task()
                 print('Finished Running 10 minute task')
                 time.sleep(600)
