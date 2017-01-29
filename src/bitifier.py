@@ -1,4 +1,4 @@
-#from configparser import ConfigParser
+from configparser import ConfigParser
 
 #from proxy.gpgpu.OCLHandler import OCLHandler
 #from .database.DatabaseConnector import DatabaseConnector
@@ -17,6 +17,8 @@ from src.databaseconnector import DatabaseConnector
 class Bitifier:
     DBConnector = None
     Accounts = []
+
+    run_counter = 0
 
     def __init__(self):
         print('...setting up bitifier bot')
@@ -60,7 +62,7 @@ class Bitifier:
                                              status=True)
         else:
             for acc in self.DBConnector.User.select():
-                self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec))
+                self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
 
         child_pid = 0
         # child_pid = os.fork()
@@ -68,6 +70,12 @@ class Bitifier:
         if child_pid == 0:
             while 1:
                 print('Running 10 minute task')
+                self.run_counter += 1
+
+                if self.run_counter >= 6:
+                    for account in self.Accounts:
+                        account.update_config(self.load_config(account.UserID))
+                        self.run_counter = 0
                 self.run_frequent_task()
                 print('Finished Running 10 minute task')
                 time.sleep(600)
@@ -91,10 +99,32 @@ class Bitifier:
         for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
+                account.api_test()
                 account.offer_funding()
 
     def offer_funding(self, funds):
         pass
+
+    @staticmethod
+    def load_config(acc_id):
+        config = {}
+
+        account = 'acc_' + str(acc_id)
+
+        parser = ConfigParser()
+        parser.read('config/config.ini')
+
+        for name, value in parser.items(account):
+            item = name.split('-')
+            currency = item[-1]
+            item = item[0]
+
+            if item not in config:
+                config[item] = {}
+
+            config[item][currency] = value
+
+        return config
 
 if __name__ == '__main__':
     Bitifier()

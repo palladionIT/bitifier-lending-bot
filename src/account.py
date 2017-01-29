@@ -38,13 +38,24 @@ class Account:
     high_hold_limit = {'usd': 0.15, 'btc': 0.1}  # Interest rate / year
     high_hold_threshold = {'usd': 40, 'btc': 40}
 
-    def __init__(self, id, mail, name, key, secret):
+    def __init__(self, id, mail, name, key, secret, config):
         print('...setting up account')
 
         self.UserID = id
         self.UserMail = mail
         self.UserName = name
         self.API = bfxapi(key, secret)
+        self.update_config(config)
+
+    def update_config(self, config):
+        self.loan_time = {key: int(val) for (key, val) in config['loan_time'].items()}
+        self.min_loan_spread = {key: int(val) for (key, val) in config['min_loan_spread'].items()}
+        self.max_loan_spread = {key: int(val) for (key, val) in config['max_loan_spread'].items()}
+        self.spread_cnt = {key: int(val) for (key, val) in config['spread_cnt'].items()}
+        self.min_lend_rate = {key: float(val) for (key, val) in config['min_lend_rate'].items()}
+        self.high_hold_amount = {key: float(val) for (key, val) in config['high_hold_amount'].items()}
+        self.high_hold_limit = {key: float(val) for (key, val) in config['high_hold_limit'].items()}
+        self.high_hold_threshold = {key: int(val) for (key, val) in config['high_hold_threshold'].items()}
 
     def check_api_connection(self):
         print('...checking login state of account')
