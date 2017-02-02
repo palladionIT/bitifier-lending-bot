@@ -187,7 +187,12 @@ class Account:
                     split_amount = math.floor((available / split_cnt) * 100) / 100
                     while split_amount < self.limit[currency]:  # Todo: also implement min value split behaviour
                         split_cnt -= 1
-                        split_amount = math.floor((available / split_cnt) * 100) / 100
+                        if split_cnt > 0:
+                            split_amount = math.floor((available / split_cnt) * 100) / 100
+                        else:
+                            split_cnt = 1
+                            split_amount = available
+                            break
 
                     if split_cnt >= 1:
                         lendbook_aggregate = 0
