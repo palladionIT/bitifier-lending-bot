@@ -25,6 +25,7 @@ class DatabaseConnector:
             self.Variables.create_table(fail_silently=True)
             self.CronRuns.create_table(fail_silently=True)
             self.BotMetaInfo.create_table(fail_silently=True)
+            self.ExchangeTrades.create_table(fail_silently=True)
 
             #http://charlesleifer.com/blog/encrypted-sqlite-databases-with-python-and-sqlcipher/
             #http://docs.peewee-orm.com/en/latest/peewee/models.html
@@ -97,11 +98,12 @@ class DatabaseConnector:
 
     class User(BtfModel):
         id = PrimaryKeyField()
+        exchange = CharField()
         name = CharField()
         email = CharField()
         password = CharField()
-        bfxapikey = CharField(max_length=64)
-        bfxapisec = CharField(max_length=64)
+        apikey = CharField(max_length=56)
+        apisec = CharField(max_length=88)
         status = BooleanField()
 
     class Variables(BtfModel):
@@ -117,6 +119,8 @@ class DatabaseConnector:
     class ExchangeTrades(BtfModel):
         id = PrimaryKeyField()
         exchange = CharField(max_length=6)
+        src_currency = CharField(max_length=3)
+        trg_currency = CharField(max_length=3)
         amount = DecimalField(max_digits=15, decimal_places=8)
         amount_real = DecimalField(max_digits=15, decimal_places=8)
         fee = DecimalField(max_digits=10, decimal_places=6)
