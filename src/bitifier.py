@@ -20,7 +20,7 @@ class Bitifier:
 
     run_counter = 0
 
-    def __init__(self):
+    def __init__(self, accounts):
         print('...setting up bitifier bot')
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
@@ -30,7 +30,45 @@ class Bitifier:
         self.DBConnector = DatabaseConnector(passphrase)
 
         if self.first_run():
-            username = getpass.getpass('Enter the bitfinex username: ')
+
+            for exchange in accounts:
+                print('Account Setup for ' + exchange + ': ')
+
+                username = getpass.getpass('Enter the ' + exchange + ' username: ')
+                while True:
+                    mail = getpass.getpass('Enter the ' + exchange + ' email: ')
+                    if re.match('[^@]+@[^@]+\.[^@]+', mail):
+                        break
+                    else:
+                        print('Enter a valid email.')
+                userpass = getpass.getpass('Enter the ' + exchange + ' password: ')
+                while True:
+                    apikey = getpass.getpass('Enter the ' + exchange + ' api key: ')
+                    if len(apikey) == 43 or len(apikey) == 56:
+                        break
+                    else:
+                        print('Enter a valid ' + exchange + ' api key.')
+                while True:
+                    apisecret = getpass.getpass('Enter the ' + exchange + ' api secret: ')
+                    if len(apisecret) == 43 or len(apisecret) == 88:
+                        break
+                    else:
+                        print('Enter a valid ' + exchange + ' api secret:')
+
+                try:
+                    self.DBConnector.User.get(self.DBConnector.User.name == username)
+                except self.DBConnector.User.DoesNotExist:
+                    self.DBConnector.User.create(exchange=exchange,
+                                                 name=username,
+                                                 email=mail,
+                                                 password=userpass,
+                                                 apikey=apikey,
+                                                 apisec=apisecret,
+                                                 status=True)
+
+                print('\n\n')
+
+            '''username = getpass.getpass('Enter the bitfinex username: ')
             while True:
                 mail = getpass.getpass('Enter the bitfinex email: ')
                 if re.match('[^@]+@[^@]+\.[^@]+', mail):
@@ -60,6 +98,8 @@ class Bitifier:
                                              bfxapikey=bfxkey,
                                              bfxapisec=bfxsec,
                                              status=True)
+
+            '''
         else:
             for acc in self.DBConnector.User.select():
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
