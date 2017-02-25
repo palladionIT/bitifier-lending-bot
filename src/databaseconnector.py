@@ -114,6 +114,14 @@ class DatabaseConnector:
         highholdlimit = CharField(max_length=12)
         highholdamt = CharField(max_length=12)
 
+    class ExchangeTrades(BtfModel):
+        id = PrimaryKeyField()
+        exchange = CharField(max_length=6)
+        amount = DecimalField(max_digits=15, decimal_places=8)
+        amount_real = DecimalField(max_digits=15, decimal_places=8)
+        fee = DecimalField(max_digits=10, decimal_places=6)
+        date = DateField()
+
     class CronRuns(BtfModel):
         id = PrimaryKeyField()
         cronid = IntegerField(null=False)
