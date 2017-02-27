@@ -54,6 +54,12 @@ class Bitifier:
                         break
                     else:
                         print('Enter a valid ' + exchange + ' api secret:')
+                while True:
+                    type = getpass.getpass('Enter the account type: ')
+                    if len(type) == 7:
+                        break
+                    else:
+                        print('Enter a valid account type:')
 
                 try:
                     self.DBConnector.User.get(self.DBConnector.User.name == username)
@@ -64,9 +70,10 @@ class Bitifier:
                                                  password=userpass,
                                                  apikey=apikey,
                                                  apisec=apisecret,
+                                                 account_type=type,
                                                  status=True)
 
-                print('\n\n')
+                print('\n')
 
             '''username = getpass.getpass('Enter the bitfinex username: ')
             while True:
