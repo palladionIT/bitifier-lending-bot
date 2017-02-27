@@ -35,6 +35,8 @@ class BFXAPI(API):
 
         url_params = {}
 
+        # Todo: remove period && volume - they are return values
+
         if period:
             url_params['period'] = period  # datetime object
 
