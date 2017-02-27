@@ -104,6 +104,7 @@ class DatabaseConnector:
         password = CharField()
         apikey = CharField(max_length=56)
         apisec = CharField(max_length=88)
+        account_type = CharField(max_length=7)
         status = BooleanField()
 
     class Variables(BtfModel):
