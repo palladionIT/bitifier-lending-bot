@@ -1,3 +1,6 @@
 [submodule "MarginBot"]
 	path = MarginBot
 	url = git@github.com:HFenter/MarginBot.git
+[submodule "src/api/bfxapi"]
+	path = src/api/bfxapi
+	url = git@git.palladion.it:matthias/py-bfxapi.git
