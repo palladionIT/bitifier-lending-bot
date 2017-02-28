@@ -73,3 +73,7 @@ class Account:
     @Status.setter
     def Status(self, value):
         self.__Status = value
+
+    def get_api_dict(self):
+        return {'key': self.__APIKey,
+                'secret': self.__APISecret}
