@@ -33,15 +33,28 @@ class BFXAPI(CommonApi):
 
         return url
 
+    @staticmethod
+    def sign_payload(payload, account):
+        j = json.dumps(payload)
+        data = base64.standard_b64encode(j.encode('utf8'))
+
+        h = hmac.new(account.APISecret.encode('utf8'), data, hashlib.sha384)
+        signature = h.hexdigest()
+        return {
+            "X-BFX-APIKEY": account.APIKey,
+            "X-BFX-PAYLOAD": data,
+            "X-BFX-SIGNATURE": signature
+        }
+
     @property
     def nonce(self):
         return str(time.time())
 
-    def __init__(self, key, secret):
+    def __init__(self):
         print('...setting up bitfinex api')
 
-        self.APIKey = key
-        self.APISecret = secret
+        # self.APIKey = key
+        # self.APISecret = secret
 
     def get_request(self, url_path):
         print('...performing GET request on API - ' + url_path)
@@ -56,12 +69,12 @@ class BFXAPI(CommonApi):
             print('CONNECTION ERROR - a connection error occurred during get request')
             return False, 503, None
 
-    def post_request(self, url_path, payload=None):
+    def post_request(self, url_path, account, payload=None):
         print('...performing POST request on API - ' + url_path)
         payload['nonce'] = self.nonce
 
         try:
-            response = requests.post(self.BaseURL + url_path, headers=self.sign_payload(payload))
+            response = requests.post(self.BaseURL + url_path, headers=self.sign_payload(payload, account))
 
             try:
                 return response.ok, response.status_code, self.byte_to_obj(response)
@@ -72,23 +85,11 @@ class BFXAPI(CommonApi):
             print('CONNECTION ERROR - a connection error occurred during post request')
             return False, 503, None
 
-    def sign_payload(self, payload):
-        j = json.dumps(payload)
-        data = base64.standard_b64encode(j.encode('utf8'))
-
-        h = hmac.new(self.APISecret.encode('utf8'), data, hashlib.sha384)
-        signature = h.hexdigest()
-        return {
-            "X-BFX-APIKEY": self.APIKey,
-            "X-BFX-PAYLOAD": data,
-            "X-BFX-SIGNATURE": signature
-        }
-
     # =======================
     # Miscellaneous functions
     # =======================
 
-    def check_authentication(self):
+    def check_authentication(self, account):
         # print('...checking login state of account')
 
         valid = True
@@ -96,7 +97,7 @@ class BFXAPI(CommonApi):
         success, return_code = self.get_request(url_path='/symbols')[0:2]
         valid = valid and success
 
-        success, return_code = self.get_acc_info()[0:2]
+        success, return_code = self.get_acc_info(account)[0:2]
 
         return valid and success
 
@@ -104,8 +105,8 @@ class BFXAPI(CommonApi):
     # Unauthenticated endpoints
     # =========================
 
-    def get_ticker(self, symbol):
-        api_path = '/pubticker/' + symbol
+    def get_ticker(self, parameter):
+        api_path = '/pubticker/' + parameter['symbol']
 
         return self.get_request(url_path=self.generate_url(api_path))
 
@@ -201,7 +202,7 @@ class BFXAPI(CommonApi):
     # Authenticated Endpoints
     # =======================
 
-    def get_acc_info(self):
+    def get_acc_info(self, account):
         # print('account info')
 
         api_path = '/account_infos'
@@ -209,7 +210,8 @@ class BFXAPI(CommonApi):
         payload = {'request': '/' + self.APIVersion + api_path}
 
         return self.post_request(url_path=api_path,
-                                 payload=payload)
+                                 payload=payload,
+                                 account=account)
 
     def get_summary(self):
         # print('30d summary')

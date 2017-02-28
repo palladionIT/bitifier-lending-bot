@@ -17,7 +17,7 @@ class CommonApi(object):
     # BFX - get_ticker
     # Kraken - get ticker information
     @abc.abstractmethod
-    def get_ticker(self, asset):
+    def get_ticker(self, parameter):
         return
 
     # Get tradeable assets
@@ -31,26 +31,26 @@ class CommonApi(object):
     # BFX - get_symbols_details
     # Kraken - get asset info
     @abc.abstractmethod
-    def get_symbols_details(self, asset, info = None, aclass = None):
+    def get_symbols_details(self, parameter):
         return
 
     # Get statistics about symbol
     # BFX - get_statistics
     # Kraken - get OHCL data
     @abc.abstractmethod
-    def get_statistics(self, symbol, interval=None, since=None):
+    def get_statistics(self, parameter):
         return
 
     # Get order book of symbol
     # BFX - get_orderbook
     # Kraken - get order book
     @abc.abstractmethod
-    def get_orderbook(self, symbol, limit_bids=None, limit_asks=None):
+    def get_orderbook(self, parameter):
         return
 
     # Get trades for symbol
     # BFX - get_trades
     # Kraken - get recent trades
     @abc.abstractmethod
-    def get_trades(self, symbol, timestamp=None, limit_trades=None):
+    def get_trades(self, parameter):
         return
