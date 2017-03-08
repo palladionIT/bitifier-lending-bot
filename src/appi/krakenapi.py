@@ -2,10 +2,10 @@ import abc
 import krakenex
 import logging
 
-from .common_api import CommonApi
+from .common_high_level import CommonHighLevel
 from src.accountt import Account
 
-class KrakenAPI(CommonApi):
+class KrakenHighLevel(CommonHighLevel):
 
     api = None
 

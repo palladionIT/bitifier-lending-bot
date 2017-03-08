@@ -1,7 +1,7 @@
 import abc
 
 
-class CommonApi(object):
+class CommonHighLevel(object):
     __metaclass__ = abc.ABCMeta
 
     # Checks if authentication is possible

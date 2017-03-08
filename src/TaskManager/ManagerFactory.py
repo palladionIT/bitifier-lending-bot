@@ -2,7 +2,7 @@ from src.TaskManager.funding_manager import FundingManager
 from src.TaskManager.trading_manager import TradingManager
 from src.accountt import Account
 from src.appi.bfxapi import BFXAPI
-from src.appi.krakenapi import KrakenAPI
+from src.appi.krakenapi import KrakenHighLevel
 
 class ManagerFactory:
 
@@ -24,7 +24,7 @@ class ManagerFactory:
         if exchange == 'bitfinex':
             api = BFXAPI()
         elif exchange == 'kraken':
-            api = KrakenAPI()
+            api = KrakenHighLevel()
 
         return FundingManager(db_connector, db_lock, accounts, api)
 
@@ -46,6 +46,6 @@ class ManagerFactory:
         if exchange == 'bitfinex':
             api = BFXAPI()
         elif exchange == 'kraken':
-            api = KrakenAPI()
+            api = KrakenHighLevel()
 
         return TradingManager(db_connector, db_lock, accounts, api)

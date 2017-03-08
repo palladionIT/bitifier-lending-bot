@@ -6,10 +6,10 @@ import json
 import base64
 import abc
 
-from .common_api import CommonApi
+from .common_high_level import CommonHighLevel
 
 
-class BFXAPI(CommonApi):
+class BFXAPI(CommonHighLevel):
     APIVersion = 'v1'
     BaseURL = 'https://api.bitfinex.com/' + APIVersion
     APIKey = None
