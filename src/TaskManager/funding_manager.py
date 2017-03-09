@@ -3,25 +3,23 @@ import time
 
 from configparser import ConfigParser
 from src.account import Account
+from src.appi.bfxapi import BFXAPI
 
-class BFXScheduler(threading.Thread):
+class FundingManager(threading.Thread):
 
     DBConnector = None
     DBLock = None
+    API = None
     Accounts = []
 
     RunCounter = 0
 
-    def __init__(self, db_connector, db_lock):
+    def __init__(self, db_connector, db_lock, accounts, api):
         # Todo: pass necessary arguments || create objects here
         self.DBConnector = db_connector
         self.DBLock = db_lock
-
-        self.DBLock.acquire()
-        for acc in self.DBConnector.User.select():
-            self.Accounts.append(
-                Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
-
+        self.Accounts = accounts
+        self.API = api
 
     def run(self):
         # Todo: refactor time loop code to be run here
@@ -44,6 +42,17 @@ class BFXScheduler(threading.Thread):
                 print('......successful login for - ' + account.UserName)
                 account.api_test()
                 account.offer_funding()
+
+    # TODO: remove this debugging function
+    def arch_change(self):
+        for acc in self.Accounts:
+            # self.API.check_authentication(acc)
+            success, code, response = self.API.get_ticker({'symbol': 'USD'})
+
+            # TODO: CONTINUE HERE AFTER AWS OUTAGE - TEST ALL API CALLS && UPDATE METHODS
+
+            if success != True:
+                print('shit!')
 
     @staticmethod
     def load_config(acc_id):

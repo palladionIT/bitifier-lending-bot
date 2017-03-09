@@ -1,12 +1,10 @@
-from configparser import ConfigParser
-
-#from proxy.gpgpu.OCLHandler import OCLHandler
-#from .database.DatabaseConnector import DatabaseConnector
 import getpass
 import re
+import threading
 import time
-import os
+from configparser import ConfigParser
 
+from src.TaskManager.ManagerFactory import ManagerFactory
 from src.account import Account
 from src.databaseconnector import DatabaseConnector
 
@@ -54,6 +52,12 @@ class Bitifier:
                         break
                     else:
                         print('Enter a valid ' + exchange + ' api secret:')
+                while True:
+                    type = getpass.getpass('Enter the account type: ')
+                    if len(type) == 7:
+                        break
+                    else:
+                        print('Enter a valid account type:')
 
                 try:
                     self.DBConnector.User.get(self.DBConnector.User.name == username)
@@ -64,9 +68,10 @@ class Bitifier:
                                                  password=userpass,
                                                  apikey=apikey,
                                                  apisec=apisecret,
+                                                 account_type=type,
                                                  status=True)
 
-                print('\n\n')
+                print('\n')
 
             '''username = getpass.getpass('Enter the bitfinex username: ')
             while True:
@@ -101,8 +106,13 @@ class Bitifier:
 
             '''
         else:
+            '''
             for acc in self.DBConnector.User.select():
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
+            '''
+
+        # TODO: REMOVE THIS PAR
+        self.arch_change()
 
         child_pid = 0
         # child_pid = os.fork()
@@ -122,6 +132,15 @@ class Bitifier:
         else:
             print('Child PID: ' + str(child_pid))
             pass
+
+    # TODO: remove this debug function
+    def arch_change(self):
+        dbLock = threading.Lock()
+
+        funder = ManagerFactory.make_funding_manager(self.DBConnector, dbLock, 'bitfinex')
+        funder.arch_change()
+        # funder.start()
+
 
     def first_run(self):
         print('...checking if first run')
