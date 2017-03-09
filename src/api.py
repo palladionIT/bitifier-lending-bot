@@ -8,8 +8,6 @@ import urllib.parse
 
 class API:
 
-    # Todo: subclass API and create BFXAPI with full set of API features
-
     APIVersion = 'v1'
     BaseURL = 'https://api.bitfinex.com/' + APIVersion
     APIKey = None
