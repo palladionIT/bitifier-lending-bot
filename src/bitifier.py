@@ -4,8 +4,9 @@ import threading
 import time
 from configparser import ConfigParser
 
-from src.TaskManager.ManagerFactory import ManagerFactory
-from src.account import Account
+from src.TaskManager.funding_manager import FundingManager
+from src.api.bfxapi.bfxapi import BFXAPI
+from src.accountt import Account
 from src.databaseconnector import DatabaseConnector
 
 
@@ -137,9 +138,34 @@ class Bitifier:
     def arch_change(self):
         dbLock = threading.Lock()
 
-        funder = ManagerFactory.make_funding_manager(self.DBConnector, dbLock, 'bitfinex')
-        funder.arch_change()
+        fund_manager = self.setup_funding_manager(self.DBConnector, dbLock)
+
+        #funder = ManagerFactory.make_funding_manager(self.DBConnector, dbLock, 'bitfinex')
+        fund_manager.arch_change()
         # funder.start()
+
+    def setup_funding_manager(self, db_connector, db_lock):
+
+        api = None
+        accounts = []
+
+        db_lock.acquire()
+        for acc in db_connector.User.select():
+            if acc.account_type == 'funding' and acc.status is True:
+                accounts.append(
+                    Account(acc.id, acc.email, acc.name, acc.apikey, acc.apisec, acc.account_type, acc.exchange,
+                            acc.status))
+        db_lock.release()
+
+        # Todo: change API initialization to init all API's that are saved in acc.exchange
+
+        if len(accounts) > 1:
+            # Todo: do error logging for too many accounts in DB
+            return
+
+        api = BFXAPI(accounts[0].APIKey, accounts[0].APISecret)
+
+        return FundingManager(db_connector, db_lock, accounts, api)
 
 
     def first_run(self):

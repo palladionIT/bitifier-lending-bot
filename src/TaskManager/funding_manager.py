@@ -3,7 +3,7 @@ import time
 
 from configparser import ConfigParser
 from src.account import Account
-from src.appi.bfxapi import BFXAPI
+from src.api.bfxapi.bfxapi import BFXAPI
 
 class FundingManager(threading.Thread):
 
@@ -53,6 +53,49 @@ class FundingManager(threading.Thread):
 
             if success != True:
                 print('shit!')
+
+    def offer_funding(self):
+        self.clear_active_offers()
+        self.get_available_funds()
+        self.load_exchange_rates()
+        self.calculate_limits()
+        offers = self.calculate_offers()
+
+
+    def clear_active_offers(self,):
+        offers = self.get_active_offers()
+
+        for offer in offers:
+            success, return_code, response = self.API.funding_new_offer(offer['id'])
+
+            if not success:
+                print('Error ' + return_code + ' cancelling active funding lends.')
+                print(str(response))
+        pass
+
+    def get_active_offers(self):
+        pass
+
+    def get_taken_offers(self):
+        pass
+
+    def get_account_history(self):
+        pass
+
+    def get_available_funds(self):
+        pass
+
+    def calculate_offers(self):
+        pass
+
+    def usd_from_btc(self, btc):
+        pass
+
+    def load_exchange_rates(self):
+        pass
+
+    def calculate_limits(self):
+        pass
 
     @staticmethod
     def load_config(acc_id):
