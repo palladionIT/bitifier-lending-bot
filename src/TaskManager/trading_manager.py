@@ -1,5 +1,6 @@
 import threading
 import time
+import logging
 
 from configparser import ConfigParser
 from src.account import Account
@@ -10,21 +11,23 @@ class TradingManager(threading.Thread):
     DBLock = None
     API = None
     Accounts = []
+    Logger = None
+    run_interval = 60
 
     RunCounter = 0
 
-    def __init__(self, db_connector, db_lock, accounts, api):
+    def __init__(self, db_connector, db_lock, accounts, api, logger):
         # Todo: pass necessary arguments || create objects here
         self.DBConnector = db_connector
         self.DBLock = db_lock
         self.Accounts = accounts
         self.API = api
+        self.Logger = logger
 
     def run(self):
-        # Todo: refactor time loop code to be run here
         # Todo: implement exception handling that restarts everything after upon next run
         while True:
-            print('Running 10 minute task')
+            print('Running ' + self.run_interval / 60 + ' minute task')
             self.run_counter += 1
 
             if self.run_counter >= 6:
@@ -32,8 +35,8 @@ class TradingManager(threading.Thread):
                     account.update_config(self.load_config(account.UserID))
                     self.run_counter = 0
             self.run_frequent_task()
-            print('Finished Running 10 minute task')
-            time.sleep(600)
+            print('Finished Running  ' + self.run_interval / 60 + '  minute task')
+            time.sleep(self.run_interval)
 
     def run_frequent_task(self):
         for account in self.Accounts:
