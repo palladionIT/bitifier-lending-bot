@@ -2,6 +2,7 @@ import getpass
 import re
 import threading
 import time
+import logging
 from configparser import ConfigParser
 
 from src.TaskManager.funding_manager import FundingManager
@@ -16,6 +17,8 @@ from src.databaseconnector import DatabaseConnector
 class Bitifier:
     DBConnector = None
     Accounts = []
+
+    Threads = []
 
     run_counter = 0
 
@@ -112,39 +115,33 @@ class Bitifier:
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
             '''
 
-        # TODO: REMOVE THIS PAR
-        self.arch_change()
+        dbLock = threading.Lock()
 
-        child_pid = 0
+        fund_manager = self.setup_funding_manager(self.DBConnector, dbLock, None)
+        trade_manager = self.setup_trading_manager(self.DBConnector, dbLock, None)
+
+        self.Threads.append(fund_manager)
+        self.Threads.append(trade_manager)
+
+        # Forking into background and running maintenance checks
+        sleep_time = 600
+        child_pid = 0 # Remove for deployment and turn on forking
         # child_pid = os.fork()
 
         if child_pid == 0:
             while 1:
-                print('Running 10 minute task')
-                self.run_counter += 1
+                print('Running ' + str(sleep_time / 60) + ' minute  maintenance task')
 
-                if self.run_counter >= 6:
-                    for account in self.Accounts:
-                        account.update_config(self.load_config(account.UserID))
-                        self.run_counter = 0
-                self.run_frequent_task()
-                print('Finished Running 10 minute task')
-                time.sleep(600)
+                for thread in self.Threads:
+                    if not thread.isAlive():
+                        thread.run()
+
+                time.sleep(sleep_time)
         else:
             print('Child PID: ' + str(child_pid))
             pass
 
-    # TODO: remove this debug function
-    def arch_change(self):
-        dbLock = threading.Lock()
-
-        fund_manager = self.setup_funding_manager(self.DBConnector, dbLock)
-
-        #funder = ManagerFactory.make_funding_manager(self.DBConnector, dbLock, 'bitfinex')
-        fund_manager.arch_change()
-        # funder.start()
-
-    def setup_funding_manager(self, db_connector, db_lock):
+    def setup_funding_manager(self, db_connector, db_lock, logger):
 
         api = None
         accounts = []
@@ -165,8 +162,10 @@ class Bitifier:
 
         api = BFXAPI(accounts[0].APIKey, accounts[0].APISecret)
 
-        return FundingManager(db_connector, db_lock, accounts, api)
+        return FundingManager(db_connector, db_lock, accounts, api, logger)
 
+    def setup_trading_manager(self, db_connector, db_lock, logger):
+        pass
 
     def first_run(self):
         print('...checking if first run')
