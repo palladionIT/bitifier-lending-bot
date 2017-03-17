@@ -6,7 +6,9 @@ import logging
 from configparser import ConfigParser
 
 from src.TaskManager.funding_manager import FundingManager
+from src.TaskManager.trading_manager import TradingManager
 from src.api.bfxapi.bfxapi import BFXAPI
+from krakenex import API
 from src.accountt import Account
 from src.databaseconnector import DatabaseConnector
 
@@ -123,6 +125,9 @@ class Bitifier:
         self.Threads.append(fund_manager)
         self.Threads.append(trade_manager)
 
+        trade_manager.run()
+        fund_manager.run()
+
         # Forking into background and running maintenance checks
         sleep_time = 600
         child_pid = 0 # Remove for deployment and turn on forking
@@ -165,7 +170,27 @@ class Bitifier:
         return FundingManager(db_connector, db_lock, accounts, api, logger)
 
     def setup_trading_manager(self, db_connector, db_lock, logger):
-        pass
+
+        api = None
+        accounts = []
+
+        db_lock.acquire()
+        for acc in db_connector.User.select():
+            if acc.account_type == 'trading' and acc.status is True:
+                accounts.append(
+                    Account(acc.id, acc.email, acc.name, acc.apikey, acc.apisec, acc.account_type, acc.exchange,
+                            acc.status))
+        db_lock.release()
+
+        # Todo: change API initialization to init all API's that are saved in acc.exchange
+
+        if len(accounts) > 1:
+            # Todo: do error logging for too many accounts in DB
+            return
+
+        api = API(accounts[0].APIKey, accounts[0].APISecret)
+
+        return TradingManager(db_connector, db_lock, accounts, api, logger)
 
     def first_run(self):
         print('...checking if first run')

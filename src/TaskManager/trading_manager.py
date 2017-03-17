@@ -27,23 +27,33 @@ class TradingManager(threading.Thread):
     def run(self):
         # Todo: implement exception handling that restarts everything after upon next run
         while True:
-            print('Running ' + self.run_interval / 60 + ' minute task')
-            self.run_counter += 1
+            print('Running ' + str(self.run_interval / 60) + ' minute task')
+            self.RunCounter += 1
 
-            if self.run_counter >= 6:
+            if self.RunCounter >= 6:
                 for account in self.Accounts:
                     account.update_config(self.load_config(account.UserID))
-                    self.run_counter = 0
+                    self.RunCounter = 0
             self.run_frequent_task()
-            print('Finished Running  ' + self.run_interval / 60 + '  minute task')
+            print('Finished Running  ' + str(self.run_interval / 60) + '  minute task')
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
-        for account in self.Accounts:
+        # Todo: check market data
+        # Todo: check buy/sell parameters
+        # Todo: do orders && write to DB
+        self.check_market_data()
+        '''for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
                 account.api_test()
                 account.offer_funding()
+        '''
+
+    def check_market_data(self):
+        # Todo: get current market data
+        #
+        pass
 
     @staticmethod
     def load_config(acc_id):

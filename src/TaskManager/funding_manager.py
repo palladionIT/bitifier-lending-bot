@@ -52,12 +52,12 @@ class FundingManager(threading.Thread):
         try:
             while True:
                 print('Running 10 minute task')
-                self.run_counter += 1
+                self.RunCounter += 1
 
-                if self.run_counter >= 6:
+                if self.RunCounter >= 6:
                     for account in self.Accounts:
                         account.update_config(self.load_config(account.UserID))
-                        self.run_counter = 0
+                        self.RunCounter = 0
                 self.run_frequent_task()
                 print('Finished Running 10 minute task')
                 time.sleep(600)
@@ -67,11 +67,13 @@ class FundingManager(threading.Thread):
             print(e)
 
     def run_frequent_task(self):
-        for account in self.Accounts:
+        '''for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
                 account.api_test()
                 account.offer_funding()
+        '''
+        self.offer_funding()
 
     def offer_funding(self):
         self.clear_active_offers()
