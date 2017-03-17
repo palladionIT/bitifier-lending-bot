@@ -4,6 +4,7 @@ import logging
 
 from configparser import ConfigParser
 from src.account import Account
+from krakenex import API
 
 class TradingManager(threading.Thread):
 
@@ -39,7 +40,6 @@ class TradingManager(threading.Thread):
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
-        # Todo: check market data
         # Todo: check buy/sell parameters
         # Todo: do orders && write to DB
         self.check_market_data()
@@ -53,6 +53,17 @@ class TradingManager(threading.Thread):
     def check_market_data(self):
         # Todo: get current market data
         #
+        trading_pair = 'XXBTZEUR'
+
+        market_state = self.API.query_public('OHLC', {'pair': trading_pair,
+                                                      'interval': '15'})
+
+        if len(market_state['error']) == 0:
+            market_data = market_state['result'][trading_pair]
+            # Todo: handle this data - compute minima/maxima
+            # Todo: fit curve to market data
+            # Todo: calculate maxima/minima && trend
+            # Todo: return something (buy? sell?)
         pass
 
     @staticmethod
