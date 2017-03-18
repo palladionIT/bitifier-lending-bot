@@ -91,7 +91,7 @@ class TradingManager(threading.Thread):
             window = np.ones(int(x_ind))/float(x_ind)
             padding_start = [y_dat[0]] * x_ind # To extend at the border to remove border error
             padding_end = [y_dat[-1]] * x_ind
-            smoothed_data = np.convolve(padding_start+y_dat+padding_end, window, 'same')[x_ind:-x_ind]
+            smoothed_data = np.convolve(padding_start+y_dat+padding_end, window, 'same')[x_ind:-x_ind].tolist()
 
         return smoothed_data
 
