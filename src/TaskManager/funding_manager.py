@@ -14,6 +14,7 @@ class FundingManager(threading.Thread):
     API = None
     Accounts = []
     Logger = None
+    run_interval = 300
 
     # Execution Counter for clean tasks
     RunCounter = 0
@@ -39,28 +40,41 @@ class FundingManager(threading.Thread):
     high_hold_limit = {'usd': 0.15, 'btc': 0.1}  # Interest rate / year
     high_hold_threshold = {'usd': 40, 'btc': 40}
 
-    def __init__(self, db_connector, db_lock, accounts, api, logger):
+    def __init__(self, db_connector, db_lock, accounts, api, config, logger):
         # Todo: pass necessary arguments || create objects here
+        super(FundingManager, self).__init__()
         self.DBConnector = db_connector
         self.DBLock = db_lock
         self.Accounts = accounts
         self.API = api
         self.Logger = logger
+        self.update_config(config)
+
+    def update_config(self, config):
+        self.loan_time = {key: int(val) for (key, val) in config['loan_time'].items()}
+        self.min_loan_spread = {key: int(val) for (key, val) in config['min_loan_spread'].items()}
+        self.max_loan_spread = {key: int(val) for (key, val) in config['max_loan_spread'].items()}
+        self.spread_cnt = {key: int(val) for (key, val) in config['spread_cnt'].items()}
+        self.min_lend_rate = {key: float(val) for (key, val) in config['min_lend_rate'].items()}
+        self.high_hold_amount = {key: float(val) for (key, val) in config['high_hold_amount'].items()}
+        self.high_hold_limit = {key: float(val) for (key, val) in config['high_hold_limit'].items()}
+        self.high_hold_threshold = {key: int(val) for (key, val) in config['high_hold_threshold'].items()}
 
     def run(self):
         # Todo: maybe try-except inside while loop to locally contain errors
         try:
             while True:
-                print('Running 10 minute task')
+                print('Running ' + str(self.run_interval / 60) + ' minute task')
                 self.RunCounter += 1
 
                 if self.RunCounter >= 6:
                     for account in self.Accounts:
-                        account.update_config(self.load_config(account.UserID))
+                        print('Updating configuration settings for funding.')
+                        self.update_config(self.load_config(account.UserID))
                         self.RunCounter = 0
                 self.run_frequent_task()
-                print('Finished Running 10 minute task')
-                time.sleep(600)
+                print('Finished Running ' + str(self.run_interval / 60) + ' minute task')
+                time.sleep(self.run_interval)
         except Exception as e:
             #self.Logger.error('FUNDING MANAGER ')
             print('FUNDING MANAGER: Error while handling recurring task.')
@@ -99,7 +113,7 @@ class FundingManager(threading.Thread):
         offers = self.get_active_offers()
 
         for offer in offers:
-            success, return_code, response = self.API.funding_new_offer(offer['id'])
+            success, return_code, response = self.API.funding_cancel_offer(offer['id'])
 
             if not success:
                 print('Error ' + return_code + ' cancelling active funding lends.')
