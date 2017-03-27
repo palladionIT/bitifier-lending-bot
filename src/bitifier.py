@@ -125,8 +125,9 @@ class Bitifier:
         self.Threads.append(fund_manager)
         self.Threads.append(trade_manager)
 
-        trade_manager.run()
-        fund_manager.run()
+        trade_manager.run_frequent_task()
+        return
+        #fund_manager.run()
 
         # Forking into background and running maintenance checks
         sleep_time = 600
@@ -139,7 +140,7 @@ class Bitifier:
 
                 for thread in self.Threads:
                     if not thread.isAlive():
-                        thread.run()
+                        thread.start()
 
                 time.sleep(sleep_time)
         else:
@@ -167,7 +168,7 @@ class Bitifier:
 
         api = BFXAPI(accounts[0].APIKey, accounts[0].APISecret)
 
-        return FundingManager(db_connector, db_lock, accounts, api, logger)
+        return FundingManager(db_connector, db_lock, accounts, api, self.load_config(accounts[0].UserID), logger)
 
     def setup_trading_manager(self, db_connector, db_lock, logger):
 
