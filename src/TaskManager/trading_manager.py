@@ -7,6 +7,9 @@ from configparser import ConfigParser
 from src.account import Account
 from krakenex import API
 
+# debug imports
+import matplotlib.pyplot as plt
+
 class TradingManager(threading.Thread):
 
     DBConnector = None
@@ -64,10 +67,25 @@ class TradingManager(threading.Thread):
             # Data extraction of compound list
             current_period = market_data[-1]
             clean_data = market_data[:-1]
+            clean_data = self.interpolate_nan(clean_data, 5)
             times = [sublist[0] for sublist in clean_data]
-            vw_average = [sublist[5] for sublist in clean_data]
+            vw_average = [float(sublist[5]) for sublist in clean_data]
+
+            print('Period Start: ' + time.ctime(times[0]))
+            print('Period End: ' + time.ctime(times[-1]))
 
             smooth_vw_average = self.smooth_data([int(i) for i in times], [float(i) for i in vw_average], 5, 'moving_average')
+            derivative = self.centered_derivative(smooth_vw_average, times)
+            dderivative = self.centered_derivative(derivative, times)
+            zeros = self.find_zeros(derivative)
+            plt.figure()
+            plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
+            plt.plot(times, smooth_vw_average, 'k', label='smoothed_data')
+            plt.plot(times, derivative, 'r--', label='derivative')
+            plt.plot(times, dderivative, 'g--', label='2nd order derivative')
+            plt.show(block=True)
+            # plt.show(block=True)
+            print('done')
             # Todo: handle this data - compute minima/maxima
             # Todo: fit curve to market data
             # Todo: calculate maxima/minima && trend
@@ -78,7 +96,49 @@ class TradingManager(threading.Thread):
             # en.wikipedia.org/wiki/Local_regression
             # https://en.wikipedia.org/wiki/Kernel_smoother
             # https://en.wikipedia.org/wiki/Moving_least_squares
+            #
+            ###############
+            # Further applied reading:
+            # http://connor-johnson.com/2014/11/23/time-series-forecasting-in-python-and-r/
+            # https://www.quantstart.com/articles/Forecasting-Financial-Time-Series-Part-1
+            # http://fluid-turb.wikidot.com/time-series-analysis
+            # https://www.quantstart.com/articles/Beginners-Guide-to-Time-Series-Analysis
+            # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fwww.petertessin.com%2FTimeSeries.pdf
+            # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fconference.scipy.org%2Fscipy2011%2Fslides%2Fmckinney_time_series.pdf
+            # https://nbviewer.jupyter.org/github/changhiskhan/talks/blob/master/pydata2012/pandas_timeseries.ipynb
+            # https://nbviewer.jupyter.org/github/jvns/talks/blob/master/pyconca2013/pistes-cyclables.ipynb
+            # https://nbviewer.jupyter.org/github/lge88/UCSD_BigData/blob/master/notebooks/weather/Weather%20Analysis.ipynb
         pass
+
+    def interpolate_nan(self, data, row):
+        for i, d in enumerate(data):
+            if float(d[row]) == 0:
+                # Check for borders
+                if i != 0 and i < len(data):
+                    p = data[i - 1]
+                    n = data[i + 1]
+                if i == 0:
+                    p = data[i + 1]
+                    n = data[i + 1]
+                if i == len(data) - 1:
+                    p = data[i - 1]
+                    n = data[i - 1]
+
+                # Check for 0 values
+                if float(p[row]) == 0 or float(n[row]) == 0:
+                    # Interpolate <open, close> and se
+                    if i != 0 and i < len(data):
+                        p[row] = str((float(data[i - 1][1]) + float(data[i - 1][4])) / 2)
+                        n[row] = str((float(data[i + 1][1]) + float(data[i + 1][4])) / 2)
+                    if i == 0:
+                        p[row] = str((float(data[i + 1][1]) + float(data[i + 1][4])) / 2)
+                        n[row] = str((float(data[i + 1][1]) + float(data[i + 1][4])) / 2)
+                    if i == len(data) - 1:
+                        p[row] = str((float(data[i - 1][1]) + float(data[i - 1][4])) / 2)
+                        n[row] = str((float(data[i - 1][1]) + float(data[i - 1][4])) / 2)
+                data[i][row] = str((float(p[row]) + float(n[row])) / 2)
+
+        return data
 
     def smooth_data(self, x_dat, y_dat, interval, type):
         smoothed_data = None
@@ -95,6 +155,27 @@ class TradingManager(threading.Thread):
 
         return smoothed_data
 
+    def centered_derivative(self, x_dat, t, type='centered'):
+        d = []
+        if type == 'forward':
+            d_t = t[1] - t[0]
+            x_dat = [x_dat[0], x_dat]
+            d = (np.diff(x_dat) / d_t).tolist()
+
+        if type == 'centered':
+            # Maybe normalize with t
+            d = np.gradient(x_dat).tolist()
+        return d
+
+    def find_zeros(self, x_dat):
+        zeros = []
+        for i in range(len(x_dat) - 1):
+            if x_dat[i] > 0 and x_dat[i + 1] < 0:
+                zeros.append([i, i + 1, -1])
+            if x_dat[i] < 0 and x_dat[i + 1] > 0:
+                zeros.append([i, i + 1, 1])
+        return zeros
+        # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
     @staticmethod
     def load_config(acc_id):
