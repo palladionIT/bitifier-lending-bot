@@ -78,6 +78,7 @@ class TradingManager(threading.Thread):
             derivative = self.centered_derivative(smooth_vw_average, times)
             dderivative = self.centered_derivative(derivative, times)
             zeros = self.find_zeros(derivative)
+            current_val = clean_data[-1]
             plt.figure()
             plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
             plt.plot(times, smooth_vw_average, 'k', label='smoothed_data')
