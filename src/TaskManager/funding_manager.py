@@ -158,14 +158,14 @@ class FundingManager(threading.Thread):
                                                     limit_bids=str(amount_bids))[2]
 
                 # Calculate if lendbook is even in the neighbourhood of our desired high lend position
-                do_high_lend = True
+                do_high_lend = False
                 lendbook_aggregate = 0
                 for book_entry in fundbook['asks']:
                     lendbook_aggregate += float(book_entry['amount'])
                     if float(book_entry['rate']) >= self.high_hold_limit[currency] * 365:
                         # Todo more sophisticated distance calculation
                         if lendbook_aggregate <= 3 * self.max_loan_spread[currency]:
-                            pass
+                            do_high_lend = True
                         else:
                             do_high_lend = False
 
