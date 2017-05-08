@@ -74,22 +74,32 @@ class TradingManager(threading.Thread):
             print('Period Start: ' + time.ctime(times[0]))
             print('Period End: ' + time.ctime(times[-1]))
 
-            smooth_vw_average = self.smooth_data([int(i) for i in times], [float(i) for i in vw_average], 5, 'moving_average')
+            smooth_vw_average = self.smooth_data([int(i) for i in times], [float(i) for i in vw_average], 15, 'moving_average')
             derivative = self.centered_derivative(smooth_vw_average, times)
             dderivative = self.centered_derivative(derivative, times)
             zeros = self.find_zeros(derivative)
+            filtered_z = self.find_extrema(times, smooth_vw_average)
             current_val = clean_data[-1]
+            #times = [time.ctime(t) for t in times]
             plt.figure()
-            plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
+            # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
             plt.plot(times, smooth_vw_average, 'k', label='smoothed_data')
-            plt.plot(times, derivative, 'r--', label='derivative')
-            plt.plot(times, dderivative, 'g--', label='2nd order derivative')
+            # plt.plot(times, derivative, 'r--', label='derivative')
+            # plt.axhline(y=0)
+            # plt.plot(times, dderivative, 'g--', label='2nd order derivative')
+            for z in zeros:
+                plt.axvline(x=times[z[0]], color='r')
+            for z in filtered_z:
+                plt.axvline(x=times[z[0]], color='b')
+            '''for z in zeros:
+                plt.axvline(x=times[z[1]])'''
+            plt.xticks([times[i] for i in range(0, len(times), 30)], [time.ctime(times[i]) for i in range(0, len(times), 30)])
             plt.show(block=True)
             # plt.show(block=True)
             print('done')
-            # Todo: handle this data - compute minima/maxima
+            # Todo: handle this data - compute minima/maxima - DONE
             # Todo: fit curve to market data
-            # Todo: calculate maxima/minima && trend
+            # Todo: calculate maxima/minima && trend - PARTIAL
             # Todo: return something (buy? sell?)
             # methods:
             # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
@@ -177,6 +187,53 @@ class TradingManager(threading.Thread):
                 zeros.append([i, i + 1, 1])
         return zeros
         # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
+
+    def clean_zeros(self, zeros, y_dat, diff):
+        z = []
+        # Set the correct indices of minima
+        # Todo
+
+        # Remove small intermediary minima
+        for i, d in enumerate(zeros):
+            if i > 0:
+                # prev = (y_dat[zeros[i-1][0]] + y_dat[zeros[i-1][1]]) / 2
+                prev = (y_dat[z[-1][0]] + y_dat[z[-1][1]]) / 2
+                curr = (y_dat[d[0]] + y_dat[d[1]]) / 2
+                # check if is alternating extrema
+                # if yes -> add
+                # if no -> check if new is better
+                if z[-1][2] == d[2]:
+                    if d[2] > 0: # minimum
+                        if curr < prev:
+                            z[-1] = d
+                    else: # maximum
+                        if curr > prev:
+                            z[-1] = d
+                else:
+                    if abs(curr - prev) > diff:
+                        z.append(d)
+                '''if abs(curr - prev) > diff:
+                    # check if is alternating extrema
+                    # if yes -> add
+                    # if no -> check if new is better
+                    if z[-1][2] == d[2]:
+                        if d[2] > 0: # minimum
+                            if curr < prev:
+                                z[-1] = d
+                        else: # maximum
+                            if curr > prev:
+                                z[-1] = d
+                    else:
+                        z.append(d)'''
+            else:
+                z.append(d)
+
+        return z
+
+    def find_extrema(self, x_dat, y_dat):
+        derivative = self.centered_derivative(y_dat, x_dat)
+        zeros = self.clean_zeros(self.find_zeros(derivative), y_dat, 3)
+        return zeros
 
     @staticmethod
     def load_config(acc_id):
