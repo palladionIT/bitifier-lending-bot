@@ -44,9 +44,22 @@ class TradingManager(threading.Thread):
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
+        # Todo: get last order from DB
+        #       RETURN last order type && amount / value, DIFFERENCE
+        # Todo: get market data and analyze - DONE
+        #       CALL (difference)
+        #       RETURN [INTERVALS, MARKET_DATA, EXTREMA]
         # Todo: check buy/sell parameters
+        #       CALL (intervals, market_data, extrema)
+        #       get current asset info from exchange
+        #       does last order and current market combination require an action?
+        #       RETURN ACTION to do
         # Todo: do orders && write to DB
-        self.check_market_data()
+        #       CALL (action)
+        #       do ACTION and calculate the properties of order
+        last_trade = self.get_last_action()
+        market_state = self.check_market_data(3)
+        action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3])
         '''for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
@@ -54,12 +67,25 @@ class TradingManager(threading.Thread):
                 account.offer_funding()
         '''
 
-    def check_market_data(self):
+    def get_last_action(self):
+        # Todo: return last action from database
+        trade = None
+        try:
+            trade = self.DBConnector.ExchangeTrades.select().order_by(self.DBConnector.ExchangeTrades.id.desc()).get()
+        except self.DBConnector.ExchangeTrades.DoesNotExist:
+            print('ERROR - TRADING MANAGER - could not retrieve last trade.')
+            trade = None
+        #User.select().order_by(User.id.desc()).get()
+        return trade
+
+    def check_market_data(self, diff):
+        market_dat = None
+
         trading_pair = 'XXBTZEUR'
-        interval = '1' # in minutes
+        interval_size = '1' # in minutes
 
         market_state = self.API.query_public('OHLC', {'pair': trading_pair,
-                                                      'interval': interval})
+                                                      'interval': interval_size})
 
         if len(market_state['error']) == 0:
             market_data = market_state['result'][trading_pair]
@@ -68,41 +94,26 @@ class TradingManager(threading.Thread):
             current_period = market_data[-1]
             clean_data = market_data[:-1]
             clean_data = self.interpolate_nan(clean_data, 5)
-            times = [sublist[0] for sublist in clean_data]
-            vw_average = [float(sublist[5]) for sublist in clean_data]
+            interval_times = [sublist[0] for sublist in clean_data]
+            vw_average = [float(sublist[5]) for sublist in clean_data]  # volume weighted data
 
-            print('Period Start: ' + time.ctime(times[0]))
-            print('Period End: ' + time.ctime(times[-1]))
+            print('Period Start: ' + time.ctime(interval_times[0]))
+            print('Period End: ' + time.ctime(interval_times[-1]))
 
-            smooth_vw_average = self.smooth_data([int(i) for i in times], [float(i) for i in vw_average], 15, 'moving_average')
-            derivative = self.centered_derivative(smooth_vw_average, times)
-            dderivative = self.centered_derivative(derivative, times)
-            zeros = self.find_zeros(derivative)
-            filtered_z = self.find_extrema(times, smooth_vw_average)
-            current_val = clean_data[-1]
-            #times = [time.ctime(t) for t in times]
-            plt.figure()
-            # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
-            plt.plot(times, smooth_vw_average, 'k', label='smoothed_data')
-            # plt.plot(times, derivative, 'r--', label='derivative')
-            # plt.axhline(y=0)
-            # plt.plot(times, dderivative, 'g--', label='2nd order derivative')
-            for z in zeros:
-                plt.axvline(x=times[z[0]], color='r')
-            for z in filtered_z:
-                c = 'b'
-                if z[3] < 0:
-                    c = 'g'
-                plt.axvline(x=times[z[0]], color=c)
-            '''for z in zeros:
-                plt.axvline(x=times[z[1]])'''
-            plt.xticks([times[i] for i in range(0, len(times), 30)], [time.ctime(times[i]) for i in range(0, len(times), 30)])
-            plt.show(block=True)
-            # plt.show(block=True)
-            print('done')
+            smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average], 15, 'moving_average')
+            derivative = self.centered_derivative(smooth_vw_average, interval_times)
+            # dderivative = self.centered_derivative(derivative, times)
+            # zeros = self.find_zeros(derivative)
+            filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
+            # current_val = clean_data[-1]
+
+            market_dat = [current_period, interval_times, smooth_vw_average, filtered_z]
+
+            self.display_graph(interval_times, smooth_vw_average, filtered_z)
             # Todo: handle this data - compute minima/maxima - DONE
             # Todo: fit curve to market data
-            # Todo: calculate maxima/minima && trend - PARTIAL
+            # Todo: calculate maxima/minima - DONE
+            # Todo: calculate trend
             # Todo: return something (buy? sell?)
             # methods:
             # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
@@ -122,7 +133,18 @@ class TradingManager(threading.Thread):
             # https://nbviewer.jupyter.org/github/changhiskhan/talks/blob/master/pydata2012/pandas_timeseries.ipynb
             # https://nbviewer.jupyter.org/github/jvns/talks/blob/master/pyconca2013/pistes-cyclables.ipynb
             # https://nbviewer.jupyter.org/github/lge88/UCSD_BigData/blob/master/notebooks/weather/Weather%20Analysis.ipynb
-        pass
+            #
+            ###############
+            # Indicators (trend)
+            # RSI relative strength index
+        return market_dat
+
+    def check_conditions(self, current_interval, interval_times, market_data, extrema):
+        # Todo: check current conditions
+        # Todo: check *current* market price
+        # Todo: check SAFEGUARD (no loss)
+        # Todo: return action
+        return None
 
     def interpolate_nan(self, data, row):
         for i, d in enumerate(data):
@@ -191,7 +213,7 @@ class TradingManager(threading.Thread):
         return zeros
         # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
-    def clean_zeros(self, zeros, y_dat, diff=None):
+    def clean_extrema(self, zeros, y_dat, diff=None):
         z = []
         # Calculate correct position of extrema
         for i, d in enumerate(zeros):
@@ -245,10 +267,33 @@ class TradingManager(threading.Thread):
 
         return z
 
-    def find_extrema(self, x_dat, y_dat):
+    def find_extrema(self, x_dat, y_dat, diff=None):
         derivative = self.centered_derivative(y_dat, x_dat)
-        zeros = self.clean_zeros(self.find_zeros(derivative), y_dat, 3)
-        return zeros
+        extrema = self.clean_extrema(self.find_zeros(derivative), y_dat, diff)
+        return extrema
+
+    def display_graph(self, x_dat, y_dat, extrema=None):
+        plt.figure()
+        # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
+        plt.plot(x_dat, y_dat, 'k', label='smoothed_data')
+        # plt.plot(times, derivative, 'r--', label='derivative')
+        # plt.axhline(y=0)
+        # plt.plot(times, dderivative, 'g--', label='2nd order derivative')
+        '''for z in zeros:
+            pass
+            # plt.axvline(x=times[z[0]], color='r')'''
+        for z in extrema:
+            c = 'b'
+            if z[3] < 0:
+                c = 'g'
+            plt.axvline(x=x_dat[z[0]], color=c)
+        '''for z in zeros:
+            plt.axvline(x=times[z[1]])'''
+        plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
+                   [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
+        plt.show(block=True)
+        # plt.show(block=True)
+        print('done')
 
     @staticmethod
     def load_config(acc_id):
