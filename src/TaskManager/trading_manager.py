@@ -90,7 +90,10 @@ class TradingManager(threading.Thread):
             for z in zeros:
                 plt.axvline(x=times[z[0]], color='r')
             for z in filtered_z:
-                plt.axvline(x=times[z[0]], color='b')
+                c = 'b'
+                if z[3] < 0:
+                    c = 'g'
+                plt.axvline(x=times[z[0]], color=c)
             '''for z in zeros:
                 plt.axvline(x=times[z[1]])'''
             plt.xticks([times[i] for i in range(0, len(times), 30)], [time.ctime(times[i]) for i in range(0, len(times), 30)])
@@ -188,45 +191,57 @@ class TradingManager(threading.Thread):
         return zeros
         # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
-    def clean_zeros(self, zeros, y_dat, diff):
+    def clean_zeros(self, zeros, y_dat, diff=None):
         z = []
-        # Set the correct indices of minima
-        # Todo
+        # Calculate correct position of extrema
+        for i, d in enumerate(zeros):
+            if d[2] < 0:
+                if y_dat[d[0]] < y_dat[d[1]]:
+                    zeros[i].insert(0, d[1])
+                else:
+                    zeros[i].insert(0, d[0])
+            else:
+                if y_dat[d[0]] > y_dat[d[1]]:
+                    zeros[i].insert(0, d[1])
+                else:
+                    zeros[i].insert(0, d[0])
 
         # Remove small intermediary minima
-        for i, d in enumerate(zeros):
-            if i > 0:
-                # prev = (y_dat[zeros[i-1][0]] + y_dat[zeros[i-1][1]]) / 2
-                prev = (y_dat[z[-1][0]] + y_dat[z[-1][1]]) / 2
-                curr = (y_dat[d[0]] + y_dat[d[1]]) / 2
-                # check if is alternating extrema
-                # if yes -> add
-                # if no -> check if new is better
-                if z[-1][2] == d[2]:
-                    if d[2] > 0: # minimum
-                        if curr < prev:
-                            z[-1] = d
-                    else: # maximum
-                        if curr > prev:
-                            z[-1] = d
-                else:
-                    if abs(curr - prev) > diff:
-                        z.append(d)
-                '''if abs(curr - prev) > diff:
-                    # check if is alternating extrema
+        if diff:
+            for i, d in enumerate(zeros):
+                if i > 0:
+                    prev = (y_dat[z[-1][1]] + y_dat[z[-1][2]]) / 2
+                    curr = (y_dat[d[1]] + y_dat[d[2]]) / 2
+                    # check if next is alternating extrema
                     # if yes -> add
                     # if no -> check if new is better
-                    if z[-1][2] == d[2]:
-                        if d[2] > 0: # minimum
+                    if z[-1][3] == d[3]:
+                        if d[3] > 0:  # minimum
                             if curr < prev:
                                 z[-1] = d
-                        else: # maximum
+                        else:  # maximum
                             if curr > prev:
                                 z[-1] = d
                     else:
-                        z.append(d)'''
-            else:
-                z.append(d)
+                        if abs(curr - prev) > diff:
+                            z.append(d)
+                    '''if abs(curr - prev) > diff:
+                        # check if is alternating extrema
+                        # if yes -> add
+                        # if no -> check if new is better
+                        if z[-1][2] == d[2]:
+                            if d[2] > 0: # minimum
+                                if curr < prev:
+                                    z[-1] = d
+                            else: # maximum
+                                if curr > prev:
+                                    z[-1] = d
+                        else:
+                            z.append(d)'''
+                else:
+                    z.append(d)
+        else:
+            z = zeros
 
         return z
 
