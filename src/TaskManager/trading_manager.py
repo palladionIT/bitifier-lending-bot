@@ -44,7 +44,7 @@ class TradingManager(threading.Thread):
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
-        # Todo: get last order from DB
+        # Todo: get last order from DB - DONE
         #       RETURN last order type && amount / value, DIFFERENCE
         # Todo: get market data and analyze - DONE
         #       CALL (difference)
@@ -58,8 +58,9 @@ class TradingManager(threading.Thread):
         #       CALL (action)
         #       do ACTION and calculate the properties of order
         last_trade = self.get_last_action()
+        account_state = self.get_account_state()
         market_state = self.check_market_data(3)
-        action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3])
+        action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], last_trade)
         '''for account in self.Accounts:
             if account.check_api_connection():
                 print('......successful login for - ' + account.UserName)
@@ -77,6 +78,30 @@ class TradingManager(threading.Thread):
             trade = None
         #User.select().order_by(User.id.desc()).get()
         return trade
+
+    def get_account_state(self):
+
+        account_balance = self.API.query_private('Balance')
+
+        if len(account_balance['error']) > 0:
+            print('ERROR - Trade Manager: could not retrieve account balance')
+            return
+
+        # Todo: for all balances -> create valid trading pairs
+        # Todo: query fees for these pairs
+
+        trading_pair = 'XXBTZEUR'
+        fee_flag = 'fees'  # in minutes
+
+        fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
+                                                              'pair': trading_pair})
+
+        if len(fee_schedule['error']) > 0:
+            print('ERROR - Trade Manager: could not retrieve fee schedule')
+            return None
+
+        # Todo: create return object
+        return None
 
     def check_market_data(self, diff):
         market_dat = None
@@ -139,11 +164,46 @@ class TradingManager(threading.Thread):
             # RSI relative strength index
         return market_dat
 
-    def check_conditions(self, current_interval, interval_times, market_data, extrema):
+    def check_conditions(self, current_interval, interval_times, market_data, extrema, last_trade):
         # Todo: check current conditions
         # Todo: check *current* market price
         # Todo: check SAFEGUARD (no loss)
         # Todo: return action
+        window_size = 10
+        current_time = time.time()
+        window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
+
+        matching_extrema = [d for d in reversed(extrema) if d[0] > window_start_index]
+
+
+        ### TODO: remove *debug* code
+        if len(matching_extrema) < 1:
+            matching_extrema = [extrema[-1]]
+
+
+        if len(matching_extrema) > 0:
+
+            '''trading_pair = 'XXBTZEUR'
+            fee_flag = 'fees' # in minutes
+
+            fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
+                                                                'pair': trading_pair})
+
+            if len(fee_schedule['error']) > 0:
+                print('ERROR - Trade Manager: could not retrieve fee schedule')
+                return None
+
+            account_balance = self.API.query_private('Balance')
+
+            if len(account_balance['error']) > 0:
+                print('ERROR - Trade Manager: could not retrieve account balance')
+                return None'''
+
+            if not last_trade:
+                print('FIRST')
+            else:
+                if last_trade.src_currency == 'BTC':
+                    print('do shit')
         return None
 
     def interpolate_nan(self, data, row):
@@ -275,6 +335,7 @@ class TradingManager(threading.Thread):
     def display_graph(self, x_dat, y_dat, extrema=None):
         plt.figure()
         # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
+        #x_dat = [t - x_dat[0] for t in x_dat]
         plt.plot(x_dat, y_dat, 'k', label='smoothed_data')
         # plt.plot(times, derivative, 'r--', label='derivative')
         # plt.axhline(y=0)
@@ -287,10 +348,12 @@ class TradingManager(threading.Thread):
             if z[3] < 0:
                 c = 'g'
             plt.axvline(x=x_dat[z[0]], color=c)
+
+        plt.axvline(x=time.time()-60*10, color='r')
         '''for z in zeros:
             plt.axvline(x=times[z[1]])'''
-        plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
-                   [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
+        #plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
+        #           [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
         plt.show(block=True)
         # plt.show(block=True)
         print('done')
