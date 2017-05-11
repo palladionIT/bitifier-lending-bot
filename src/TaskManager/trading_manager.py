@@ -277,7 +277,7 @@ class TradingManager(threading.Thread):
 
     def smooth_data(self, x_dat, y_dat, interval, type):
         smoothed_data = None
-        interval_s = interval * 60
+        interval_s = int(interval * 60)
 
         if type == 'simple_moving_average':
             weights = np.repeat(1.0, interval_s) / interval_s
@@ -311,7 +311,7 @@ class TradingManager(threading.Thread):
         u_avg = self.smooth_data(None, u.tolist(), window, 'simple_moving_average')
         d_avg = self.smooth_data(None, d.tolist(), window, 'simple_moving_average')
         rs = np.divide(u_avg, d_avg)
-        return [-1] * window * 60 + (100 - 100 / (1 + rs)).tolist()  # pad result for missing beginning with -1
+        return [-1] * int(window * 60) + (100 - 100 / (1 + rs)).tolist()  # pad result for missing beginning with -1
 
     def centered_derivative(self, x_dat, t, type='centered'):
         d = []
