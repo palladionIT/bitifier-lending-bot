@@ -188,9 +188,9 @@ class TradingManager(threading.Thread):
 
         if len(matching_extrema) > 0:
 
-            rsi = self.relative_strength_index(market_data, 1)
+            rsi = self.relative_strength_index(market_data, 0.8)
 
-            self.display_graph(interval_times, rsi)
+            self.display_graph(interval_times, rsi, yhlines=[30, 50, 80])
 
             order = self.check_sell_order(matching_extrema, rsi, last_trade)
 
@@ -416,7 +416,7 @@ class TradingManager(threading.Thread):
                 return high  # return high to always make profit
         return None
 
-    def display_graph(self, x_dat, y_dat, extrema=None):
+    def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
         # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
         # x_dat = [t - x_dat[0] for t in x_dat]
@@ -433,6 +433,10 @@ class TradingManager(threading.Thread):
                 if z[3] < 0:
                     c = 'g'
                 plt.axvline(x=x_dat[z[0]], color=c)
+
+        if yhlines:
+            for l in yhlines:
+                plt.axhline(y=l, color='r')
 
         plt.axvline(x=time.time() - 60 * 10, color='r')
         '''for z in zeros:
