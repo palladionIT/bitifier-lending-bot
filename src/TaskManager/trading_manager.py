@@ -238,18 +238,41 @@ class TradingManager(threading.Thread):
 
     def smooth_data(self, x_dat, y_dat, interval, type):
         smoothed_data = None
+        interval_s = interval * 60
+
+        if type == 'simple_moving_average':
+            weights = np.repeat(1.0, interval_s)/interval_s
+            smoothed_data = np.convolve(y_dat, weights, 'valid')
+
         if type == 'moving_average':
             # Adds border extension to avoid artifacts for convolution
             # Gets size of window for given timeframe
             # Convolves and trims padding elements
-            interval_s = interval * 60
             x_ind = np.argmax(np.asarray([x - x_dat[0] for x in x_dat]) >= interval_s)
             window = np.ones(int(x_ind))/float(x_ind)
             padding_start = [y_dat[0]] * x_ind # To extend at the border to remove border error
             padding_end = [y_dat[-1]] * x_ind
-            smoothed_data = np.convolve(padding_start+y_dat+padding_end, window, 'same')[x_ind:-x_ind].tolist()
+            smoothed_data = np.convolve(padding_start+y_dat+padding_end, window, 'same')[x_ind:-x_ind]
 
-        return smoothed_data
+        if type == 'exponential_moving_average':
+            weights = np.exp(np.linspace(-1., 0., interval_s))
+            weights /= weights.sum()
+            smoothed_data = np.convolve(y_dat, weights, mode='full')[:len(y_dat)]
+            smoothed_data[:interval_s] = smoothed_data[interval_s]
+
+        return smoothed_data.tolist()
+
+    def relative_strength_index(self, data, window):
+        delta = np.diff(data)
+        u = abs(delta * 0)
+        d = u.copy()
+        u[delta > 0] = abs(delta[delta > 0])
+        d[delta < 0] = abs(delta[delta < 0])
+
+        u_avg = self.smooth_data(None, u.tolist(), window, 'simple_moving_average')
+        d_avg = self.smooth_data(None, d.tolist(), window, 'simple_moving_average')
+        rs = np.divide(u_avg, d_avg)
+        return [-1] * window * 60 + (100 - 100 / (1 + rs)).tolist()  # pad result for missing beginning with -1
 
     def centered_derivative(self, x_dat, t, type='centered'):
         d = []
@@ -343,18 +366,19 @@ class TradingManager(threading.Thread):
         '''for z in zeros:
             pass
             # plt.axvline(x=times[z[0]], color='r')'''
-        for z in extrema:
-            c = 'b'
-            if z[3] < 0:
-                c = 'g'
-            plt.axvline(x=x_dat[z[0]], color=c)
+        if extrema:
+            for z in extrema:
+                c = 'b'
+                if z[3] < 0:
+                    c = 'g'
+                plt.axvline(x=x_dat[z[0]], color=c)
 
         plt.axvline(x=time.time()-60*10, color='r')
         '''for z in zeros:
             plt.axvline(x=times[z[1]])'''
         #plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
         #           [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
-        plt.show(block=True)
+        plt.show(block=False)
         # plt.show(block=True)
         print('done')
 
