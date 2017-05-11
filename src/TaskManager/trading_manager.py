@@ -242,7 +242,7 @@ class TradingManager(threading.Thread):
         interval_s = interval * 60
 
         if type == 'simple_moving_average':
-            weights = np.repeat(1.0, interval_s)/interval_s
+            weights = np.repeat(1.0, interval_s) / interval_s
             smoothed_data = np.convolve(y_dat, weights, 'valid')
 
         if type == 'moving_average':
@@ -356,10 +356,32 @@ class TradingManager(threading.Thread):
         extrema = self.clean_extrema(self.find_zeros(derivative), y_dat, diff)
         return extrema
 
+    def calculate_profit(self, buy_rate, sell_rate, amount, fee):
+        # Todo: allow for 2 different fee's [buy_fee, sell_fee] in calculation
+        value = (amount * (1 - fee)) / buy_rate
+        return (value * (1 - fee) * sell_rate) - amount
+
+    def calculate_min_sell_margin(self, buy_price, amount, fee):
+        search_window_size = 100  # in USD
+        margin = None
+        low = buy_price
+        high = buy_price + search_window_size
+        while not margin:
+            tmp = (low + high) / 2
+            tmp_margin = self.calculate_profit(buy_price, tmp, amount, fee)
+            if abs(high - low) > 0.001:
+                if tmp_margin < 0:
+                    low = tmp
+                else:
+                    high = tmp
+            else:
+                return high  # return high to always make profit
+        return None
+
     def display_graph(self, x_dat, y_dat, extrema=None):
         plt.figure()
         # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
-        #x_dat = [t - x_dat[0] for t in x_dat]
+        # x_dat = [t - x_dat[0] for t in x_dat]
         plt.plot(x_dat, y_dat, 'k', label='smoothed_data')
         # plt.plot(times, derivative, 'r--', label='derivative')
         # plt.axhline(y=0)
