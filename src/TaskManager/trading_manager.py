@@ -10,8 +10,8 @@ from krakenex import API
 # debug imports
 import matplotlib.pyplot as plt
 
-class TradingManager(threading.Thread):
 
+class TradingManager(threading.Thread):
     DBConnector = None
     DBLock = None
     API = None
@@ -76,7 +76,7 @@ class TradingManager(threading.Thread):
         except self.DBConnector.ExchangeTrades.DoesNotExist:
             print('ERROR - TRADING MANAGER - could not retrieve last trade.')
             trade = None
-        #User.select().order_by(User.id.desc()).get()
+        # User.select().order_by(User.id.desc()).get()
         return trade
 
     def get_account_state(self):
@@ -107,7 +107,7 @@ class TradingManager(threading.Thread):
         market_dat = None
 
         trading_pair = 'XXBTZEUR'
-        interval_size = '1' # in minutes
+        interval_size = '1'  # in minutes
 
         market_state = self.API.query_public('OHLC', {'pair': trading_pair,
                                                       'interval': interval_size})
@@ -125,7 +125,8 @@ class TradingManager(threading.Thread):
             print('Period Start: ' + time.ctime(interval_times[0]))
             print('Period End: ' + time.ctime(interval_times[-1]))
 
-            smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average], 15, 'moving_average')
+            smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average], 15,
+                                                 'moving_average')
             derivative = self.centered_derivative(smooth_vw_average, interval_times)
             # dderivative = self.centered_derivative(derivative, times)
             # zeros = self.find_zeros(derivative)
@@ -249,10 +250,10 @@ class TradingManager(threading.Thread):
             # Gets size of window for given timeframe
             # Convolves and trims padding elements
             x_ind = np.argmax(np.asarray([x - x_dat[0] for x in x_dat]) >= interval_s)
-            window = np.ones(int(x_ind))/float(x_ind)
-            padding_start = [y_dat[0]] * x_ind # To extend at the border to remove border error
+            window = np.ones(int(x_ind)) / float(x_ind)
+            padding_start = [y_dat[0]] * x_ind  # To extend at the border to remove border error
             padding_end = [y_dat[-1]] * x_ind
-            smoothed_data = np.convolve(padding_start+y_dat+padding_end, window, 'same')[x_ind:-x_ind]
+            smoothed_data = np.convolve(padding_start + y_dat + padding_end, window, 'same')[x_ind:-x_ind]
 
         if type == 'exponential_moving_average':
             weights = np.exp(np.linspace(-1., 0., interval_s))
@@ -373,10 +374,10 @@ class TradingManager(threading.Thread):
                     c = 'g'
                 plt.axvline(x=x_dat[z[0]], color=c)
 
-        plt.axvline(x=time.time()-60*10, color='r')
+        plt.axvline(x=time.time() - 60 * 10, color='r')
         '''for z in zeros:
             plt.axvline(x=times[z[1]])'''
-        #plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
+        # plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
         #           [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
         plt.show(block=False)
         # plt.show(block=True)
