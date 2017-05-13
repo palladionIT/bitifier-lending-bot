@@ -180,30 +180,37 @@ class TradingManager(threading.Thread):
         if len(matching_extrema) < 1:
             matching_extrema = [extrema[-1]]
 
-        # todo: if last trade == sell
-        #       -> check if there rsi && maxima is there
-        #       -> buy stuff
-        # todo: if last trade == buy
-        #       -> check if price is above margin
-        #       -> IFF yes: check rsi && maxima
-        #       -> IFF is OK: buy stuff
+        # Todo: filter minor extrema
+        # Todo: if there is a matching extrema -> check if current price is even higher
+        # Todo: check for min && max
+        # Todo: check if current price is higher/lower && if it is within a very small
+        # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
 
         if len(matching_extrema) > 0:
 
+            '''for i in [0.8, 1, 1.2]:
+                rsii = self.relative_strength_index(market_data, i)
+
+                self.display_graph(interval_times, rsii, extrema=extrema, yhlines=[20, 50, 80])
+            '''
+
             rsi = self.relative_strength_index(market_data, 0.8)
 
-            self.display_graph(interval_times, rsi, yhlines=[30, 50, 80])
+            self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
 
-            order = self.check_sell_order(matching_extrema, rsi, last_trade)
+            # order = self.check_sell_order(matching_extrema, rsi, last_trade)
 
             if not last_trade:
                 order = self.check_buy_order(matching_extrema, rsi)
             else:
                 if last_trade.src_currency == 'USD':
-                    order = self.check_sell_order(matching_extrema, rsi, last_trade, current_interval)
+                    order = self.check_sell_order(matching_extrema, rsi, last_trade)
 
-                if last_trade.src_currency == 'BTC':
-                    order = self.check_buy_order(matching_extrema, rsi)
+                elif last_trade.src_currency == 'BTC':
+                    order = self.check_buy_order(matching_extrema, rsi, last_trade)
+                else:
+                    order = {'type': 'none',
+                             'check': False}
 
             '''trading_pair = 'XXBTZEUR'
             fee_flag = 'fees' # in minutes
@@ -220,12 +227,17 @@ class TradingManager(threading.Thread):
             if len(account_balance['error']) > 0:
                 print('ERROR - Trade Manager: could not retrieve account balance')
                 return None'''
-        return None
+        return order
 
-    def check_buy_order(self, extrema, rsi):
-        if extrema[-1][3] > 0:
-            if rsi[-1] < 30:
-                print('it is oversold -> to buy shit')
+    def check_buy_order(self, extrema, rsi, last_order=None):
+        if True or extrema[-1][3] > 0:
+            if True or rsi[-1] < 15:
+                #if
+                return {'type': 'buy',
+                        'check': True}
+
+        return {'type': 'buy',
+                'check': False}
 
     def check_sell_order(self, extrema, rsi, last_order):
         if True or extrema[-1][3] > 0:
@@ -237,15 +249,16 @@ class TradingManager(threading.Thread):
                                                                       'pair': trading_pair})
                 current_fee = float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100
 
-                margin = self.calculate_min_sell_margin(1684, 50, current_fee)
+                sell_price = self.calculate_min_sell_margin(last_order.amount_src, last_order.amount_src, current_fee)
 
+                if extrema[4] > sell_price and extrema[4] > last_order.min_sell_margin:
+                    return {'type': 'sell',
+                            'check': True,
+                            'min_price': sell_price}
                 #account_balance['result']['XXBT']
-
-                # get fee's - DONE
-                # calculate - PROGRESS
-                # get current sell price - DONE
-                # check if is high enough
-                pass
+        return {'type': 'sell',
+                'check': False,
+                'min_price': 0}
 
     def interpolate_nan(self, data, row):
         for i, d in enumerate(data):
@@ -388,6 +401,10 @@ class TradingManager(threading.Thread):
                     z.append(d)
         else:
             z = zeros
+
+        # Calculate extrema value
+        for i, e in enumerate(z):
+            z[i].append(y_dat[e[0]])
 
         return z
 
