@@ -18,3 +18,12 @@ def migrate_v1(db):
         migrator.add_column(table_name, 'extrema_time', extrema_time),
         migrator.add_column(table_name, 'min_sell_margin', min_sell_margin)
     )
+
+def migrate_v2(db):
+    migrator = SqliteMigrator(db)
+
+    table_name = 'ExchangeTrades'
+
+    migrate(
+        migrator.rename_column(table_name, 'amount_trg', 'rate')
+    )

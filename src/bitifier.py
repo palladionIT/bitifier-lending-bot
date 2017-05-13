@@ -118,7 +118,7 @@ class Bitifier:
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
             '''
 
-        # migrate_v1(self.DBConnector.DBConnector)
+        # migrate_v2(self.DBConnector.DBConnector)
 
         dbLock = threading.Lock()
 
@@ -128,7 +128,7 @@ class Bitifier:
         self.Threads.append(fund_manager)
         self.Threads.append(trade_manager)
 
-        trade_manager.run_frequent_task()
+        trade_manager.run()
         return
         #fund_manager.run()
 

@@ -123,8 +123,8 @@ class DatabaseConnector:
         src_currency = CharField(max_length=3)
         trg_currency = CharField(max_length=3)
         amount_src = DecimalField(max_digits=15, decimal_places=8)
-        amount_trg = DecimalField(max_digits=15, decimal_places=8)
         amount_real = DecimalField(max_digits=15, decimal_places=8)  # USD only, fee subtracted
+        rate = DecimalField(max_digits=15, decimal_places=8)
         fee = DecimalField(max_digits=10, decimal_places=6)
         extrema_time = IntegerField()
         min_sell_margin = DecimalField(max_digits=15, decimal_places=8)
