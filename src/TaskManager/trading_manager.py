@@ -133,8 +133,10 @@ class TradingManager(threading.Thread):
             filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
             # current_val = clean_data[-1]
 
-            market_dat = [current_period, interval_times, smooth_vw_average, filtered_z]
+            # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
+            market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
 
+            # self.display_graph(interval_times, smooth_vw_average, zeros)
             self.display_graph(interval_times, smooth_vw_average, filtered_z)
             # Todo: handle this data - compute minima/maxima - DONE
             # Todo: fit curve to market data - DONE
@@ -165,7 +167,7 @@ class TradingManager(threading.Thread):
             # RSI relative strength index
         return market_dat
 
-    def check_conditions(self, current_interval, interval_times, market_data, extrema, last_trade):
+    def check_conditions(self, current_interval, interval_times, market_data, real_market_data, extrema, last_trade):
         window_size = 10
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
