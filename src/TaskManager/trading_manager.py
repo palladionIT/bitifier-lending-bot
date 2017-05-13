@@ -21,6 +21,11 @@ class TradingManager(threading.Thread):
 
     RunCounter = 0
 
+    ## TODO REMOVE DEBUG
+    chart_stuff = True
+    chart_stuff_switch = False
+    chart_enforced = False
+
     def __init__(self, db_connector, db_lock, accounts, api, logger):
         # Todo: pass necessary arguments || create objects here
         self.DBConnector = db_connector
@@ -35,7 +40,7 @@ class TradingManager(threading.Thread):
             print('Running ' + str(self.run_interval / 60) + ' minute task')
             self.RunCounter += 1
 
-            if self.RunCounter >= 6:
+            if False and self.RunCounter >= 6:
                 for account in self.Accounts:
                     account.update_config(self.load_config(account.UserID))
                     self.RunCounter = 0
@@ -60,6 +65,7 @@ class TradingManager(threading.Thread):
         last_trade = self.get_last_action()
         account_state = self.get_account_state()
         market_state = self.check_market_data(3)
+        # market_state = self.check_market_data()
         action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
         if action['type'] == 'buy' and action['check']:
             self.create_buy_order(action)
@@ -67,14 +73,6 @@ class TradingManager(threading.Thread):
             self.create_sell_order(action, last_trade)
 
     def create_buy_order(self, order):
-        # Todo: perform buy order with current price
-        # Todo: write ALL info to DB
-
-
-        # Todo: get current order book - DONE
-        # Todo: get current best price - DONE
-        # Todo: get account balance
-        # Todo: perform order - DONE
         # Todo: write to db
 
         trading_pair = 'XXBTZEUR'
@@ -87,13 +85,17 @@ class TradingManager(threading.Thread):
         buy_orders = order_book['result'][trading_pair]['bids']
         sell_orders = order_book['result'][trading_pair]['asks']
 
-        # Todo get account balance
         funds = float(self.API.query_private('Balance')['result']['ZEUR'])
-        # funds = 50
 
         expire_time = 60  # in seconds
 
         immediate_order = True
+
+        # TODO REMOVE AFTER DEBUG
+        lowest_sell = float(sell_orders[0][0])
+        # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
+        highest_buy = float(buy_orders[0][0])
+        price = (highest_buy + lowest_sell) / 2
 
         if immediate_order:
             order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
@@ -118,11 +120,13 @@ class TradingManager(threading.Thread):
         # Todo: get order info from account (using order_info)
         # Todo: write to database
         # order_info['result']['txid'] -> get txid -> get tx info from account
-        print('ORDER DONE! - WRITING DB STUFF')
+        print('BUY ORDER DONE! - WRITING DB STUFF')
+        self.write_to_order_to_file(price, funds, 'b')
+        self.chart_stuff_switch = True
 
     def create_sell_order(self, order, last_trade):
-        # Todo: check *current* market price
-        # Todo: if satisfies -> sell
+        # Todo: check *current* market price - DONE
+        # Todo: if satisfies -> sell -
         # Todo: else loop (with 10 sec wait) and get current book -> create sell order
         # Todo: write info to DB
         trading_pair = 'XXBTZEUR'
@@ -143,16 +147,22 @@ class TradingManager(threading.Thread):
         # if highest_buy > order['min_price'] and highest_buy > self.calculate_min_sell_margin():
 
         # Todo get account balance
-        funds = float(self.API.query_private('Balance')['result']['ZEUR'])
+        funds = float(self.API.query_private('Balance')['result']['XXBT'])
         # funds = 50
 
-        expire_time = 60  # in seconds
-        order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
-                                                         'type': 'sell',
-                                                         'ordertype': 'limit',
-                                                         'volume': funds,
-                                                         'expiretm': '+'+str(expire_time),
-                                                         'validate': 'true'})
+        if price > self.calculate_min_sell_margin(last_trade.rate, last_trade.amount_src, self.get_current_fee(trading_pair)):
+            expire_time = 60  # in seconds
+            order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
+                                                             'type': 'sell',
+                                                             'ordertype': 'limit',
+                                                             'price': price,
+                                                             'volume': funds,
+                                                             'expiretm': '+'+str(expire_time),
+                                                             'validate': 'true'})
+
+            self.write_to_order_to_file(price, funds, 's')
+            print('SELL ORDER DONE! - WRITING DB STUFF')
+            self.chart_stuff_switch = True
         pass
 
     def send_order(self, pair, type, order_type, funds, expire_time):
@@ -192,7 +202,7 @@ class TradingManager(threading.Thread):
         # Todo: create return object
         return None
 
-    def check_market_data(self, diff):
+    def check_market_data(self, diff=None):
         market_dat = None
 
         trading_pair = 'XXBTZEUR'
@@ -225,13 +235,14 @@ class TradingManager(threading.Thread):
             # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
             market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
 
-            # self.display_graph(interval_times, smooth_vw_average, zeros)
-            self.display_graph(interval_times, smooth_vw_average, filtered_z)
+            ### self.display_graph(interval_times, smooth_vw_average, zeros)
+            if self.chart_enforced or (self.chart_stuff and self.chart_stuff_switch):
+                self.display_graph(interval_times, smooth_vw_average, filtered_z)
             # Todo: handle this data - compute minima/maxima - DONE
             # Todo: fit curve to market data - DONE
             # Todo: calculate maxima/minima - DONE
             # Todo: calculate trend - DONE
-            # Todo: return something (buy? sell?)
+            # Todo: return something (buy? sell?) - DONE
             # methods:
             # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
             # https://en.wikipedia.org/wiki/Moving_average#Other_weightings
@@ -261,13 +272,17 @@ class TradingManager(threading.Thread):
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
 
-        matching_extrema = [d for d in reversed(extrema) if d[0] > window_start_index]
+        # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
+        matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index]
+
+        print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index))
+        self.write_extrema_to_file(extrema[-1], window_start_index)
 
         margin = self.calculate_min_sell_margin(1684, 50, 0.0026)
 
         ### TODO: remove *debug* code
-        if len(matching_extrema) < 1:
-            matching_extrema = [extrema[-1]]
+        #if len(matching_extrema) < 1:
+        #    matching_extrema = [extrema[-1]]
 
         # Todo: filter minor extrema
         # Todo: if there is a matching extrema -> check if current price is even higher
@@ -282,21 +297,26 @@ class TradingManager(threading.Thread):
 
                 self.display_graph(interval_times, rsii, extrema=extrema, yhlines=[20, 50, 80])
             '''
+            print('EXTREMA found')
+
+            recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(market_data, 0.8)
 
-            self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
+            if self.chart_enforced or (self.chart_stuff and self.chart_stuff_switch):
+                self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
+                self.chart_stuff = False
 
-            # order = self.check_sell_order(matching_extrema, rsi, last_trade)
-
+            #order = self.check_sell_order(recent_extrema, rsi, self.DBConnector.ExchangeTrades())
+            # return order
             if not last_trade:
-                order = self.check_buy_order(matching_extrema, rsi)
+                order = self.check_buy_order(recent_extrema, rsi)
             else:
                 if last_trade.src_currency == 'USD':
-                    order = self.check_sell_order(matching_extrema, rsi, last_trade)
+                    order = self.check_sell_order(recent_extrema, rsi, last_trade)
 
                 elif last_trade.src_currency == 'BTC':
-                    order = self.check_buy_order(matching_extrema, rsi, last_trade)
+                    order = self.check_buy_order(recent_extrema, rsi, last_trade)
                 else:
                     order = {'type': 'none',
                              'check': False}
@@ -316,10 +336,14 @@ class TradingManager(threading.Thread):
             if len(account_balance['error']) > 0:
                 print('ERROR - Trade Manager: could not retrieve account balance')
                 return None'''
+        else:
+            order = {'type': 'none',
+                     'check': False}
         return order
 
-    def check_buy_order(self, extrema, rsi, last_order=None):
-        if extrema[-1][3] > 0:
+    def check_buy_order(self, extremum, rsi, last_order=None):
+        print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
+        if extremum[3] > 0:
             if rsi[-1] < 15:
                 #if
                 return {'type': 'buy',
@@ -328,8 +352,14 @@ class TradingManager(threading.Thread):
         return {'type': 'buy',
                 'check': False}
 
-    def check_sell_order(self, extrema, rsi, last_order):
-        if extrema[-1][3] > 0:
+    def check_sell_order(self, extremum, rsi, last_order):
+
+        # last_order.amount_src = 50
+        # last_order.rate = 1585
+        # last_order.min_sell_margin = 1592
+        print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
+
+        if extremum[3] > 0:
             if rsi[-1] > 80:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
@@ -338,9 +368,9 @@ class TradingManager(threading.Thread):
                                                                       'pair': trading_pair})
                 current_fee = float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100
 
-                sell_price = self.calculate_min_sell_margin(last_order.amount_src, last_order.amount_src, current_fee)
+                sell_price = self.calculate_min_sell_margin(last_order.rate, last_order.amount_src, current_fee)
 
-                if extrema[4] > sell_price and extrema[4] > last_order.min_sell_margin:
+                if extremum[4] > sell_price and extremum[4] > last_order.min_sell_margin:
                     return {'type': 'sell',
                             'check': True,
                             'min_price': sell_price}
@@ -348,6 +378,11 @@ class TradingManager(threading.Thread):
         return {'type': 'sell',
                 'check': False,
                 'min_price': 0}
+
+    def get_current_fee(self, trading_pair):
+        fee_schedule = self.API.query_private('TradeVolume', {'fee-info': 'fees',
+                                                              'pair': trading_pair})
+        return float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100
 
     def interpolate_nan(self, data, row):
         for i, d in enumerate(data):
@@ -439,7 +474,7 @@ class TradingManager(threading.Thread):
         return zeros
         # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
-    def clean_extrema(self, zeros, y_dat, diff=None):
+    def clean_extrema(self, zeros, y_dat, diff=None, reverse=False):
         z = []
         # Calculate correct position of extrema
         for i, d in enumerate(zeros):
@@ -454,8 +489,10 @@ class TradingManager(threading.Thread):
                 else:
                     zeros[i].insert(0, d[0])
 
-        # Remove small intermediary minima
+        # Remove small intermediary extrema
         if diff:
+            if reverse:
+                zeros.reverse()
             for i, d in enumerate(zeros):
                 if i > 0:
                     prev = (y_dat[z[-1][1]] + y_dat[z[-1][2]]) / 2
@@ -495,7 +532,33 @@ class TradingManager(threading.Thread):
         for i, e in enumerate(z):
             z[i].append(y_dat[e[0]])
 
+        if reverse:
+           z.reverse()
         return z
+
+    def extrema_in_interval(self, extrema, int_start, int_end):
+        minimum = None
+        maximum = None
+        for extremum in extrema:
+            if extremum[0] >= int_start and extremum[0] <= int_end:
+                if extremum[3] > 0:
+                    if minimum:
+                        if minimum[4] > extremum[4]:
+                            minimum = extremum
+                    else:
+                        minimum = extremum
+                elif extremum[3] < 0:
+                    if maximum:
+                        if maximum[4] < extremum[4]:
+                            maximum = extremum
+                    else:
+                        maximum = extremum
+
+        if minimum[0] > maximum[0]:
+            return [maximum, minimum]
+        else:
+            return [minimum, maximum]
+
 
     def find_extrema(self, x_dat, y_dat, diff=None):
         derivative = self.centered_derivative(y_dat, x_dat)
@@ -561,6 +624,25 @@ class TradingManager(threading.Thread):
         plt.show(block=False)
         # plt.show(block=True)
         print('done')
+
+    def write_to_order_to_file(self, price, amount, type):
+        f = open('stats.txt', 'a')
+        if type == 'b':
+            min_sell = self.calculate_min_sell_margin(price, amount, 0.0026)
+            f.write('BUY ' + price + 'BTC at: ' + str(price) + ' | min sell: ' + min_sell + '\n')
+        if type == 's':
+            f.write('SELL ' + price + 'BTC at: ' + str(price) + '\n')
+
+        f.close()
+
+    def write_extrema_to_file(self, extrema, window_pos):
+        f = open('stats.txt', 'a')
+        if extrema[3] > 0:
+            f.write('MINIMUM at ' + str(extrema[0]) + ' with window start: ' + str(window_pos) + '\n')
+        if extrema[3] < 0:
+            f.write('MAXIMUM at ' + str(extrema[0]) + ' with window start: ' + str(window_pos) + '\n')
+
+        f.close()
 
     @staticmethod
     def load_config(acc_id):
