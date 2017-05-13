@@ -60,17 +60,106 @@ class TradingManager(threading.Thread):
         last_trade = self.get_last_action()
         account_state = self.get_account_state()
         market_state = self.check_market_data(3)
-        action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], last_trade)
-        '''for account in self.Accounts:
-            if account.check_api_connection():
-                print('......successful login for - ' + account.UserName)
-                account.api_test()
-                account.offer_funding()
-        '''
+        action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
+        if action['type'] == 'buy' and action['check']:
+            self.create_buy_order(action)
+        if action['type'] == 'sell' and action['check']:
+            self.create_sell_order(action, last_trade)
+
+    def create_buy_order(self, order):
+        # Todo: perform buy order with current price
+        # Todo: write ALL info to DB
+
+
+        # Todo: get current order book - DONE
+        # Todo: get current best price - DONE
+        # Todo: get account balance
+        # Todo: perform order - DONE
+        # Todo: write to db
+
+        trading_pair = 'XXBTZEUR'
+        order_book = self.API.query_public('Depth', {'pair': trading_pair,
+                                                     'count': 20})
+
+        if len(order_book['error']) > 0:
+            return
+
+        buy_orders = order_book['result'][trading_pair]['bids']
+        sell_orders = order_book['result'][trading_pair]['asks']
+
+        # Todo get account balance
+        funds = float(self.API.query_private('Balance')['result']['ZEUR'])
+        # funds = 50
+
+        expire_time = 60  # in seconds
+
+        immediate_order = True
+
+        if immediate_order:
+            order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
+                                                             'type': 'buy',
+                                                             'ordertype': 'market',
+                                                             'volume': funds,
+                                                             'expiretm': '+'+str(expire_time),
+                                                             'validate': 'true'})
+        else:
+            lowest_sell = float(sell_orders[0][0])
+            # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
+            highest_buy = float(buy_orders[0][0])
+            price = (highest_buy + lowest_sell) / 2
+
+            order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
+                                                             'type': 'buy',
+                                                             'ordertype': 'limit',
+                                                             'price': price,
+                                                             'volume': funds,
+                                                             'expiretm': '+'+str(expire_time),
+                                                             'validate': 'true'})
+        # Todo: get order info from account (using order_info)
+        # Todo: write to database
+        # order_info['result']['txid'] -> get txid -> get tx info from account
+        print('ORDER DONE! - WRITING DB STUFF')
+
+    def create_sell_order(self, order, last_trade):
+        # Todo: check *current* market price
+        # Todo: if satisfies -> sell
+        # Todo: else loop (with 10 sec wait) and get current book -> create sell order
+        # Todo: write info to DB
+        trading_pair = 'XXBTZEUR'
+        order_book = self.API.query_public('Depth', {'pair': trading_pair,
+                                                     'count': 20})
+
+        if len(order_book['error']) > 0:
+            return
+
+        buy_orders = order_book['result'][trading_pair]['bids']
+        sell_orders = order_book['result'][trading_pair]['asks']
+
+        lowest_sell = float(sell_orders[0][0])
+        # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
+        highest_buy = float(buy_orders[0][0])
+        price = (highest_buy + lowest_sell) / 2
+
+        # if highest_buy > order['min_price'] and highest_buy > self.calculate_min_sell_margin():
+
+        # Todo get account balance
+        funds = float(self.API.query_private('Balance')['result']['ZEUR'])
+        # funds = 50
+
+        expire_time = 60  # in seconds
+        order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
+                                                         'type': 'sell',
+                                                         'ordertype': 'limit',
+                                                         'volume': funds,
+                                                         'expiretm': '+'+str(expire_time),
+                                                         'validate': 'true'})
+        pass
+
+    def send_order(self, pair, type, order_type, funds, expire_time):
+        pass
 
     def get_last_action(self):
         # Todo: return last action from database
-        trade = None
         try:
             trade = self.DBConnector.ExchangeTrades.select().order_by(self.DBConnector.ExchangeTrades.id.desc()).get()
         except self.DBConnector.ExchangeTrades.DoesNotExist:
@@ -230,8 +319,8 @@ class TradingManager(threading.Thread):
         return order
 
     def check_buy_order(self, extrema, rsi, last_order=None):
-        if True or extrema[-1][3] > 0:
-            if True or rsi[-1] < 15:
+        if extrema[-1][3] > 0:
+            if rsi[-1] < 15:
                 #if
                 return {'type': 'buy',
                         'check': True}
@@ -240,8 +329,8 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extrema, rsi, last_order):
-        if True or extrema[-1][3] > 0:
-            if True or rsi[-1] > 80:
+        if extrema[-1][3] > 0:
+            if rsi[-1] > 80:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
                 # account_balance = self.API.query_private('Balance')
