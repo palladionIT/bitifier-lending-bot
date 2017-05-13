@@ -122,9 +122,12 @@ class DatabaseConnector:
         exchange = CharField(max_length=6)
         src_currency = CharField(max_length=3)
         trg_currency = CharField(max_length=3)
-        amount = DecimalField(max_digits=15, decimal_places=8)
+        amount_src = DecimalField(max_digits=15, decimal_places=8)
+        amount_trg = DecimalField(max_digits=15, decimal_places=8)
         amount_real = DecimalField(max_digits=15, decimal_places=8)  # USD only, fee subtracted
         fee = DecimalField(max_digits=10, decimal_places=6)
+        extrema_time = IntegerField()
+        min_sell_margin = DecimalField(max_digits=15, decimal_places=8)
         date = DateField()
 
     class CronRuns(BtfModel):

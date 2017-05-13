@@ -11,6 +11,7 @@ from src.api.bfxapi.bfxapi import BFXAPI
 from krakenex import API
 from src.accountt import Account
 from src.databaseconnector import DatabaseConnector
+from src.db_migrate import *
 
 
 # Todo: add database storage for analysis
@@ -116,6 +117,8 @@ class Bitifier:
             for acc in self.DBConnector.User.select():
                 self.Accounts.append(Account(acc.id, acc.email, acc.name, acc.bfxapikey, acc.bfxapisec, self.load_config(acc.id)))
             '''
+
+        # migrate_v1(self.DBConnector.DBConnector)
 
         dbLock = threading.Lock()
 
