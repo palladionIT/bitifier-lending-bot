@@ -430,11 +430,18 @@ class TradingManager(threading.Thread):
             pass
             # plt.axvline(x=times[z[0]], color='r')'''
         if extrema:
-            for z in extrema:
-                c = 'b'
-                if z[3] < 0:
-                    c = 'g'
-                plt.axvline(x=x_dat[z[0]], color=c)
+            if len(extrema[0]) < 4:
+                for z in extrema:
+                    c = 'b'
+                    if z[2] < 0:
+                        c = 'g'
+                    plt.axvline(x=x_dat[z[0]], color=c)
+            else:
+                for z in extrema:
+                    c = 'b'
+                    if z[3] < 0:
+                        c = 'g'
+                    plt.axvline(x=x_dat[z[0]], color=c)
 
         if yhlines:
             for l in yhlines:
