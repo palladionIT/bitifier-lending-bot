@@ -394,9 +394,8 @@ class TradingManager(threading.Thread):
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
                 # account_balance = self.API.query_private('Balance')
-                fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
-                                                                      'pair': trading_pair})
-                current_fee = float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100
+
+                current_fee = self.get_current_fee(trading_pair)
 
                 sell_price = self.calculate_min_sell_margin(last_order.rate, last_order.amount_src, current_fee)
 
@@ -595,13 +594,11 @@ class TradingManager(threading.Thread):
         extrema = self.clean_extrema(self.find_zeros(derivative), y_dat, diff)
         return extrema
 
-    def calculate_profit(self, buy_rate, sell_rate, amount, fee):
-        # Todo: allow for 2 different fee's [buy_fee, sell_fee] in calculation
-        try:
-            value = (amount * (1 - fee)) / buy_rate  # Todo: TypeError: unsupported operand type(s) for *: 'decimal.Decimal' and 'float'
-            return (value * (1 - fee) * sell_rate) - amount
-        except Exception:
-            pass
+    def calculate_profit(self, buy_rate, sell_rate, amount, buy_fee, sell_fee=None):
+        if not sell_fee:
+            sell_fee = buy_fee
+        value = (amount * (1 - buy_fee)) / buy_rate
+        return (value * (1 - sell_fee) * sell_rate) - amount
 
     def calculate_min_sell_margin(self, buy_price, amount, fee=None):
         search_window_size = 100  # in USD
