@@ -1,5 +1,7 @@
 import threading
 import time
+import datetime
+import decimal
 import logging
 import numpy as np
 
@@ -25,6 +27,9 @@ class TradingManager(threading.Thread):
     chart_stuff = True
     chart_stuff_switch = False
     chart_enforced = False
+    order_oszillator = 1
+    order_price = 1642.5515
+    order_min_price = 1651.126939
 
     def __init__(self, db_connector, db_lock, accounts, api, logger):
         # Todo: pass necessary arguments || create objects here
@@ -49,21 +54,8 @@ class TradingManager(threading.Thread):
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
-        # Todo: get last order from DB - DONE
-        #       RETURN last order type && amount / value, DIFFERENCE
-        # Todo: get market data and analyze - DONE
-        #       CALL (difference)
-        #       RETURN [INTERVALS, MARKET_DATA, EXTREMA]
-        # Todo: check buy/sell parameters
-        #       CALL (intervals, market_data, extrema)
-        #       get current asset info from exchange
-        #       does last order and current market combination require an action?
-        #       RETURN ACTION to do
-        # Todo: do orders && write to DB
-        #       CALL (action)
-        #       do ACTION and calculate the properties of order
         last_trade = self.get_last_action()
-        account_state = self.get_account_state()
+        # account_state = self.get_account_state()
         market_state = self.check_market_data(3)
         # market_state = self.check_market_data()
         action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
@@ -73,7 +65,6 @@ class TradingManager(threading.Thread):
             self.create_sell_order(action, last_trade)
 
     def create_buy_order(self, order):
-        # Todo: write to db
 
         trading_pair = 'XXBTZEUR'
         order_book = self.API.query_public('Depth', {'pair': trading_pair,
@@ -104,6 +95,7 @@ class TradingManager(threading.Thread):
                                                              'volume': funds,
                                                              'expiretm': '+'+str(expire_time),
                                                              'validate': 'true'})
+            # Todo: get and set price
         else:
             lowest_sell = float(sell_orders[0][0])
             # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
@@ -117,12 +109,27 @@ class TradingManager(threading.Thread):
                                                              'volume': funds,
                                                              'expiretm': '+'+str(expire_time),
                                                              'validate': 'true'})
+
         # Todo: get order info from account (using order_info)
         # Todo: write to database
+        min_sell = self.calculate_min_sell_margin(price, funds)
         # order_info['result']['txid'] -> get txid -> get tx info from account
         print('BUY ORDER DONE! - WRITING DB STUFF')
+        self.DBConnector.ExchangeTrades.create(exchange='kraken',
+                                               src_currency='USD',
+                                               trg_currency='BTC',
+                                               amount_src=funds,
+                                               amount_real=funds / price,
+                                               rate=price,
+                                               fee=0.0026,
+                                               extrema_time=0,
+                                               min_sell_margin=min_sell,
+                                               date=datetime.datetime.now())
+        '''self.order_oszillator = 1
+        self.order_price = price
+        self.order_min_price = self.calculate_min_sell_margin(price, 50, 0.0026)
         self.write_to_order_to_file(price, funds, 'b')
-        self.chart_stuff_switch = True
+        self.chart_stuff_switch = True'''
 
     def create_sell_order(self, order, last_trade):
         # Todo: check *current* market price - DONE
@@ -162,45 +169,63 @@ class TradingManager(threading.Thread):
 
             self.write_to_order_to_file(price, funds, 's')
             print('SELL ORDER DONE! - WRITING DB STUFF')
-            self.chart_stuff_switch = True
+            self.DBConnector.ExchangeTrades.create(exchange='kraken',
+                                                   src_currency='BTC',
+                                                   trg_currency='USD',
+                                                   amount_src=funds,
+                                                   amount_real=funds * price,
+                                                   rate=price,
+                                                   fee=0.0026,
+                                                   extrema_time=0,
+                                                   min_sell_margin=0,
+                                                   date=datetime.datetime.now())
+            '''self.order_oszillator = 0
+            self.order_price = 0
+            self.order_min_price = 0
+            self.chart_stuff_switch = True'''
         pass
 
     def send_order(self, pair, type, order_type, funds, expire_time):
         pass
 
     def get_last_action(self):
-        # Todo: return last action from database
         try:
             trade = self.DBConnector.ExchangeTrades.select().order_by(self.DBConnector.ExchangeTrades.id.desc()).get()
         except self.DBConnector.ExchangeTrades.DoesNotExist:
             print('ERROR - TRADING MANAGER - could not retrieve last trade.')
             trade = None
         # User.select().order_by(User.id.desc()).get()
+        # return self.DBConnector.ExchangeTrades()
         return trade
 
     def get_account_state(self):
 
-        account_balance = self.API.query_private('Balance')
+        try:
+            account_balance = self.API.query_private('Balance')
 
-        if len(account_balance['error']) > 0:
-            print('ERROR - Trade Manager: could not retrieve account balance')
-            return
+            if len(account_balance['error']) > 0:
+                print('ERROR - Trade Manager: could not retrieve account balance')
+                return None
 
-        # Todo: for all balances -> create valid trading pairs
-        # Todo: query fees for these pairs
+            # Todo: for all balances -> create valid trading pairs
+            # Todo: query fees for these pairs
 
-        trading_pair = 'XXBTZEUR'
-        fee_flag = 'fees'  # in minutes
+            trading_pair = 'XXBTZEUR'
+            fee_flag = 'fees'  # in minutes
 
-        fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
-                                                              'pair': trading_pair})
+            fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
+                                                                  'pair': trading_pair})  # Todo: catch socket.timout exception
 
-        if len(fee_schedule['error']) > 0:
-            print('ERROR - Trade Manager: could not retrieve fee schedule')
+            if len(fee_schedule['error']) > 0:
+                print('ERROR - Trade Manager: could not retrieve fee schedule')
+                return None
+
+            # Todo: create return object
+            return {'balance': account_balance,
+                    'account_fees': fee_schedule}
+        except ConnectionError:
+            print('ERROR - Trade Manager: ConnectionError in get_account_state()')
             return None
-
-        # Todo: create return object
-        return None
 
     def check_market_data(self, diff=None):
         market_dat = None
@@ -209,7 +234,7 @@ class TradingManager(threading.Thread):
         interval_size = '1'  # in minutes
 
         market_state = self.API.query_public('OHLC', {'pair': trading_pair,
-                                                      'interval': interval_size})
+                                                      'interval': interval_size}) # Todo: fix JSONDecodeError
 
         if len(market_state['error']) == 0:
             market_data = market_state['result'][trading_pair]
@@ -235,8 +260,9 @@ class TradingManager(threading.Thread):
             # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
             market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
 
+            #self.display_graph(interval_times, smooth_vw_average, filtered_z)
             ### self.display_graph(interval_times, smooth_vw_average, zeros)
-            if self.chart_enforced or (self.chart_stuff and self.chart_stuff_switch):
+            if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, smooth_vw_average, filtered_z)
             # Todo: handle this data - compute minima/maxima - DONE
             # Todo: fit curve to market data - DONE
@@ -271,11 +297,12 @@ class TradingManager(threading.Thread):
         window_size = 10
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
+        window_end_index = len(market_data) - 3
 
         # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
-        matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index]
+        matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
 
-        print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index))
+        print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
         self.write_extrema_to_file(extrema[-1], window_start_index)
 
         margin = self.calculate_min_sell_margin(1684, 50, 0.0026)
@@ -303,12 +330,15 @@ class TradingManager(threading.Thread):
 
             rsi = self.relative_strength_index(market_data, 0.8)
 
-            if self.chart_enforced or (self.chart_stuff and self.chart_stuff_switch):
+            if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
                 self.chart_stuff = False
 
             #order = self.check_sell_order(recent_extrema, rsi, self.DBConnector.ExchangeTrades())
             # return order
+            '''if self.order_oszillator > 0:
+                return self.check_sell_order(recent_extrema, rsi, self.DBConnector.ExchangeTrades())
+            '''
             if not last_trade:
                 order = self.check_buy_order(recent_extrema, rsi)
             else:
@@ -354,12 +384,12 @@ class TradingManager(threading.Thread):
 
     def check_sell_order(self, extremum, rsi, last_order):
 
-        # last_order.amount_src = 50
-        # last_order.rate = 1585
-        # last_order.min_sell_margin = 1592
-        print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
+        '''last_order.amount_src = 50
+        last_order.rate = self.order_price
+        last_order.min_sell_margin = 1650.84'''
+        print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
 
-        if extremum[3] > 0:
+        if extremum[3] < 0:
             if rsi[-1] > 80:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
@@ -382,7 +412,7 @@ class TradingManager(threading.Thread):
     def get_current_fee(self, trading_pair):
         fee_schedule = self.API.query_private('TradeVolume', {'fee-info': 'fees',
                                                               'pair': trading_pair})
-        return float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100
+        return decimal.Decimal(float(fee_schedule['result']['fees'][trading_pair]['fee']) / 100)
 
     def interpolate_nan(self, data, row):
         for i, d in enumerate(data):
@@ -390,7 +420,7 @@ class TradingManager(threading.Thread):
                 # Check for borders
                 if i != 0 and i < len(data):
                     p = data[i - 1]
-                    n = data[i + 1]
+                    n = data[i + 1] # TODO: catch this IndexError -> observe why
                 if i == 0:
                     p = data[i + 1]
                     n = data[i + 1]
@@ -567,14 +597,26 @@ class TradingManager(threading.Thread):
 
     def calculate_profit(self, buy_rate, sell_rate, amount, fee):
         # Todo: allow for 2 different fee's [buy_fee, sell_fee] in calculation
-        value = (amount * (1 - fee)) / buy_rate
-        return (value * (1 - fee) * sell_rate) - amount
+        try:
+            value = (amount * (1 - fee)) / buy_rate  # Todo: TypeError: unsupported operand type(s) for *: 'decimal.Decimal' and 'float'
+            return (value * (1 - fee) * sell_rate) - amount
+        except Exception:
+            pass
 
-    def calculate_min_sell_margin(self, buy_price, amount, fee):
+    def calculate_min_sell_margin(self, buy_price, amount, fee=None):
         search_window_size = 100  # in USD
         margin = None
         low = buy_price
-        high = buy_price + search_window_size
+
+        if not fee:
+            fee = self.get_current_fee('XXBTZEUR')
+
+        if not buy_price:
+            return
+
+        if not search_window_size:
+            return
+        high = buy_price + search_window_size # Todo: fix and find TypeError (buy_price == Null)
         while not margin:
             tmp = (low + high) / 2
             tmp_margin = self.calculate_profit(buy_price, tmp, amount, fee)
@@ -629,9 +671,9 @@ class TradingManager(threading.Thread):
         f = open('stats.txt', 'a')
         if type == 'b':
             min_sell = self.calculate_min_sell_margin(price, amount, 0.0026)
-            f.write('BUY ' + price + 'BTC at: ' + str(price) + ' | min sell: ' + min_sell + '\n')
+            f.write('BUY ' + str(amount) + 'BTC at: ' + str(price) + ' | min sell: ' + str(min_sell) + '\n')
         if type == 's':
-            f.write('SELL ' + price + 'BTC at: ' + str(price) + '\n')
+            f.write('SELL ' + str(amount) + 'BTC at: ' + str(price) + '\n')
 
         f.close()
 
