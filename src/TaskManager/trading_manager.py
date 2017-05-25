@@ -20,6 +20,7 @@ class TradingManager(threading.Thread):
     Accounts = []
     Logger = None
     run_interval = 60
+    rsi_limit = 15
 
     RunCounter = 0
 
@@ -58,6 +59,8 @@ class TradingManager(threading.Thread):
             last_trade = self.get_last_action()
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
+            self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
+            print('RSI LIMIT: ' + str(self.rsi_limit))
             # market_state = self.check_market_data()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
             if action['type'] == 'buy' and action['check']:
@@ -410,7 +413,7 @@ class TradingManager(threading.Thread):
     def check_buy_order(self, extremum, rsi, last_order=None):
         print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
         if extremum[3] > 0:
-            if rsi[-1] < 15:
+            if rsi[-1] < self.rsi_limit:
                 #if
                 return {'type': 'buy',
                         'check': True}
@@ -664,6 +667,26 @@ class TradingManager(threading.Thread):
             else:
                 return high  # return high to always make profit
         return None
+
+    def calculate_adaptive_rsi_lim(self, data):
+        p_max = max(data)
+        p_min = min(data)
+
+        even = len(data) % 2 == 0
+        half = len(data) / 2
+        second_start = 0
+
+        if not even:
+            second_start = 1
+
+        first = data[0:int(half)]
+        second = data[int(half + second_start):len(data)]
+
+        t = (sum(second) - sum(first)) / sum(data) + 1
+
+        t = (t) * (1 / 2)
+
+        return (1 - t) * 15 + t * 25;
 
     def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
