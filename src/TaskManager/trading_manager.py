@@ -4,6 +4,7 @@ import datetime
 import decimal
 import logging
 import numpy as np
+import math
 
 from configparser import ConfigParser
 from src.account import Account
@@ -106,13 +107,10 @@ class TradingManager(threading.Thread):
             tx = order_info['result']
             tx_id = order_info['result']['txid'][0]
             tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
-
             price = tx_info['result'][tx_id]['price']
             usd_vol = tx_info['result'][tx_id]['cost']
             btc_vol = tx_info['result'][tx_id]['vol']
             fee = tx_info['result'][tx_id]['fee']
-            # debug id: 'OKPYKZ-EV6YD-WWMT4I'
-            # Todo: get and set price
         else:
             lowest_sell = float(sell_orders[0][0])
             # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
@@ -127,10 +125,8 @@ class TradingManager(threading.Thread):
                                                              'expiretm': '+'+str(expire_time),
                                                              'validate': 'true'})
 
-        # Todo: get order info from account (using order_info)
-        # Todo: write to database
         min_sell = self.calculate_min_sell_margin(decimal.Decimal(price), decimal.Decimal(funds))
-        # order_info['result']['txid'] -> get txid -> get tx info from account
+
         print('BUY ORDER DONE! - WRITING DB STUFF')
         self.DBConnector.ExchangeTrades.create(exchange='kraken',
                                                src_currency='USD',
@@ -402,7 +398,7 @@ class TradingManager(threading.Thread):
                     # RSI relative strength index
         except Exception as e:
             print('ERROR - could not check market data')
-            print(e)
+            print(e)'''
 
 
         return market_dat
@@ -419,29 +415,11 @@ class TradingManager(threading.Thread):
         print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
         self.write_extrema_to_file(extrema[-1], window_start_index)
 
-        margin = self.calculate_min_sell_margin(1684, 50, 0.0026)
-
-        ### TODO: remove *debug* code
-        #if len(matching_extrema) < 1:
-        #    matching_extrema = [extrema[-1]]
-        #rsi = self.relative_strength_index(market_data, 0.8)
-        #self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
-
-        # Todo: filter minor extrema
         # Todo: if there is a matching extrema -> check if current price is even higher
-        # Todo: check for min && max
         # Todo: check if current price is higher/lower && if it is within a very small
         # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
 
         if len(matching_extrema) > 0:
-
-            '''for i in [0.8, 1, 1.2]:
-                rsii = self.relative_strength_index(market_data, i)
-
-                self.display_graph(interval_times, rsii, extrema=extrema, yhlines=[20, 50, 80])
-            '''
-            print('EXTREMA found')
-
             recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(market_data, 0.8)
@@ -450,11 +428,6 @@ class TradingManager(threading.Thread):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
                 self.chart_stuff = False
 
-            #order = self.check_sell_order(recent_extrema, rsi, self.DBConnector.ExchangeTrades())
-            # return order
-            '''if self.order_oszillator > 0:
-                return self.check_sell_order(recent_extrema, rsi, self.DBConnector.ExchangeTrades())
-            '''
             if not last_trade:
                 order = self.check_buy_order(recent_extrema, rsi)
             else:
@@ -466,22 +439,6 @@ class TradingManager(threading.Thread):
                 else:
                     order = {'type': 'none',
                              'check': False}
-
-            '''trading_pair = 'XXBTZEUR'
-            fee_flag = 'fees' # in minutes
-
-            fee_schedule = self.API.query_private('TradeVolume', {'fee-info': fee_flag,
-                                                                'pair': trading_pair})
-
-            if len(fee_schedule['error']) > 0:
-                print('ERROR - Trade Manager: could not retrieve fee schedule')
-                return None
-
-            account_balance = self.API.query_private('Balance')
-
-            if len(account_balance['error']) > 0:
-                print('ERROR - Trade Manager: could not retrieve account balance')
-                return None'''
         else:
             order = {'type': 'none',
                      'check': False}
@@ -499,17 +456,12 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extremum, rsi, last_order):
-
-        '''last_order.amount_src = 50
-        last_order.rate = self.order_price
-        last_order.min_sell_margin = 1650.84'''
         print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0:
             if rsi[-1] > 80:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
-                # account_balance = self.API.query_private('Balance')
 
                 current_fee = self.get_current_fee(trading_pair)
 
@@ -519,7 +471,6 @@ class TradingManager(threading.Thread):
                     return {'type': 'sell',
                             'check': True,
                             'min_price': sell_price}
-                #account_balance['result']['XXBT']
         return {'type': 'sell',
                 'check': False,
                 'min_price': 0}
@@ -655,19 +606,6 @@ class TradingManager(threading.Thread):
                     else:
                         if abs(curr - prev) > diff:
                             z.append(d)
-                    '''if abs(curr - prev) > diff:
-                        # check if is alternating extrema
-                        # if yes -> add
-                        # if no -> check if new is better
-                        if z[-1][2] == d[2]:
-                            if d[2] > 0: # minimum
-                                if curr < prev:
-                                    z[-1] = d
-                            else: # maximum
-                                if curr > prev:
-                                    z[-1] = d
-                        else:
-                            z.append(d)'''
                 else:
                     z.append(d)
         else:
