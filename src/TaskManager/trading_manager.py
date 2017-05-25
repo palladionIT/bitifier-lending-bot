@@ -263,8 +263,76 @@ class TradingManager(threading.Thread):
 
         trading_pair = 'XXBTZEUR'
         interval_size = '1'  # in minutes
+        err_cnt = 0
 
-        try:
+        while err_cnt < 3:
+            try:
+                market_state = self.API.query_public('OHLC', {'pair': trading_pair,
+                                                              'interval': interval_size}) # Todo: fix JSONDecodeError
+                if len(market_state['error']) == 0:
+                    market_data = market_state['result'][trading_pair]
+
+                    # Data extraction of compound list
+                    current_period = market_data[-1]
+                    clean_data = market_data[:-1]
+                    clean_data = self.interpolate_nan(clean_data, 5)
+                    interval_times = [sublist[0] for sublist in clean_data]
+                    vw_average = [float(sublist[5]) for sublist in clean_data]  # volume weighted data
+
+                    # print('Period Start: ' + time.ctime(interval_times[0]))
+                    # print('Period End: ' + time.ctime(interval_times[-1]))
+
+                    smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
+                                                         15,
+                                                         'moving_average')
+                    derivative = self.centered_derivative(smooth_vw_average, interval_times)
+                    # dderivative = self.centered_derivative(derivative, times)
+                    # zeros = self.find_zeros(derivative)
+                    filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
+                    # current_val = clean_data[-1]
+
+                    # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
+                    market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
+
+                    # self.display_graph(interval_times, smooth_vw_average, filtered_z)
+                    ### self.display_graph(interval_times, smooth_vw_average, zeros)
+                    if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
+                        self.display_graph(interval_times, smooth_vw_average, filtered_z)
+                        # Todo: handle this data - compute minima/maxima - DONE
+                        # Todo: fit curve to market data - DONE
+                        # Todo: calculate maxima/minima - DONE
+                        # Todo: calculate trend - DONE
+                        # Todo: return something (buy? sell?) - DONE
+                        # methods:
+                        # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
+                        # https://en.wikipedia.org/wiki/Moving_average#Other_weightings
+                        # en.wikipedia.org/wiki/Local_regression
+                        # https://en.wikipedia.org/wiki/Kernel_smoother
+                        # https://en.wikipedia.org/wiki/Moving_least_squares
+                        #
+                        ###############
+                        # Further applied reading:
+                        # http://connor-johnson.com/2014/11/23/time-series-forecasting-in-python-and-r/
+                        # https://www.quantstart.com/articles/Forecasting-Financial-Time-Series-Part-1
+                        # http://fluid-turb.wikidot.com/time-series-analysis
+                        # https://www.quantstart.com/articles/Beginners-Guide-to-Time-Series-Analysis
+                        # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fwww.petertessin.com%2FTimeSeries.pdf
+                        # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fconference.scipy.org%2Fscipy2011%2Fslides%2Fmckinney_time_series.pdf
+                        # https://nbviewer.jupyter.org/github/changhiskhan/talks/blob/master/pydata2012/pandas_timeseries.ipynb
+                        # https://nbviewer.jupyter.org/github/jvns/talks/blob/master/pyconca2013/pistes-cyclables.ipynb
+                        # https://nbviewer.jupyter.org/github/lge88/UCSD_BigData/blob/master/notebooks/weather/Weather%20Analysis.ipynb
+                        #
+                        ###############
+                        # Indicators (trend)
+                        # RSI relative strength index
+
+                err_cnt = 3
+            except Exception as e:
+                print('ERROR - could not check market data')
+                print(e)
+                err_cnt += 1
+
+        '''try:
             market_state = self.API.query_public('OHLC', {'pair': trading_pair,
                                                           'interval': interval_size}) # Todo: fix JSONDecodeError
             if len(market_state['error']) == 0:
