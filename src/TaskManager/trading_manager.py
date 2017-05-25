@@ -202,19 +202,28 @@ class TradingManager(threading.Thread):
             else:
                 return
 
-        self.write_to_order_to_file(price, funds, 's')
-        print('SELL ORDER DONE! - WRITING DB STUFF')
-        self.DBConnector.ExchangeTrades.create(exchange='kraken',
-                                               src_currency='BTC',
-                                               trg_currency='USD',
-                                               amount_src=funds,
-                                               amount_real=funds * price,
-                                               rate=price,
-                                               fee=0.0026,
-                                               extrema_time=0,
-                                               min_sell_margin=0,
-                                               date=datetime.datetime.now())
-        pass
+        if status == 'closed':
+
+            # OBKGWN-SEUT2-2IBMOC
+            #tx_id = 'OBKGWN-SEUT2-2IBMOC'
+            #tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
+            price = tx_info['result'][tx_id]['price']
+            usd_vol = tx_info['result'][tx_id]['cost']
+            btc_vol = tx_info['result'][tx_id]['vol']
+            fee = tx_info['result'][tx_id]['fee']
+
+            self.write_to_order_to_file(price, funds, 's')
+            print('SELL ORDER DONE! - WRITING DB STUFF')
+            self.DBConnector.ExchangeTrades.create(exchange='kraken',
+                                                   src_currency='BTC',
+                                                   trg_currency='USD',
+                                                   amount_src=funds,
+                                                   amount_real=usd_vol,
+                                                   rate=price,
+                                                   fee=fee,
+                                                   extrema_time=0,
+                                                   min_sell_margin=0,
+                                                   date=datetime.datetime.now())
 
     def send_order(self, pair, type, order_type, funds, expire_time):
         pass
