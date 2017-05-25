@@ -407,13 +407,13 @@ class TradingManager(threading.Thread):
         window_size = 10
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
-        window_end_index = len(market_data) - 5
+        window_end_index = len(market_data) - 4
 
         # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
         matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
 
         print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
-        self.write_extrema_to_file(extrema[-1], window_start_index)
+        # self.write_extrema_to_file(extrema[-1], window_start_index)
 
         # Todo: if there is a matching extrema -> check if current price is even higher
         # Todo: check if current price is higher/lower && if it is within a very small
