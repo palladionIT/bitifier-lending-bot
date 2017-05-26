@@ -104,12 +104,13 @@ class TradingManager(threading.Thread):
                                                              'volume': funds,
                                                              'expiretm': '+'+str(expire_time),
                                                              'oflags': 'viqc'})
+            # Todo: implement loop to wait for closed confirmation
             tx = order_info['result']
             tx_id = order_info['result']['txid'][0]
             tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
             price = tx_info['result'][tx_id]['price']
-            usd_vol = tx_info['result'][tx_id]['cost']
-            btc_vol = tx_info['result'][tx_id]['vol']
+            usd_vol = tx_info['result'][tx_id]['vol']
+            btc_vol = tx_info['result'][tx_id]['cost']
             fee = tx_info['result'][tx_id]['fee']
         else:
             lowest_sell = float(sell_orders[0][0])
