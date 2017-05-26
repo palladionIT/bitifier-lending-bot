@@ -685,24 +685,29 @@ class TradingManager(threading.Thread):
         return None
 
     def calculate_adaptive_rsi_lim(self, data):
-        p_max = max(data)
-        p_min = min(data)
 
-        even = len(data) % 2 == 0
-        half = len(data) / 2
+        data_timeframe = 60
+
+        frame = data[len(data)-data_timeframe:len(data)]
+
+        p_max = max(frame)
+        p_min = min(frame)
+
+        even = len(frame) % 2 == 0
+        half = len(frame) / 2
         second_start = 0
 
         if not even:
             second_start = 1
 
-        first = data[0:int(half)]
-        second = data[int(half + second_start):len(data)]
+        first = frame[0:int(half)]
+        second = frame[int(half + second_start):len(frame)]
 
-        t = (sum(second) - sum(first)) / sum(data) + 1
+        t = (sum(second) - sum(first)) / sum(frame) + 1
 
         t = (t) * (1 / 2)
 
-        return (1 - t) * 15 + t * 25;
+        return (1 - t) * 15 + t * 25
 
     def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
