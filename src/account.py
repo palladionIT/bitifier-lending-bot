@@ -6,7 +6,7 @@ import math
 import json
 import base64
 
-from .bfxapi import BFXAPI as bfxapi
+from .api.bfxapi.bfxapi import BFXAPI as bfxapi
 from .databaseconnector import DatabaseConnector as db
 
 class Account:
