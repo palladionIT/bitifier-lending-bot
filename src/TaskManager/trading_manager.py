@@ -34,7 +34,6 @@ class TradingManager(threading.Thread):
     order_min_price = 1651.126939
 
     def __init__(self, db_connector, db_lock, accounts, api, logger):
-        # Todo: pass necessary arguments || create objects here
         self.DBConnector = db_connector
         self.DBLock = db_lock
         self.Accounts = accounts
@@ -42,7 +41,6 @@ class TradingManager(threading.Thread):
         self.Logger = logger
 
     def run(self):
-        # Todo: implement exception handling that restarts everything after upon next run
         while True:
             print('Running ' + str(self.run_interval / 60) + ' minute task')
             self.RunCounter += 1
@@ -52,7 +50,7 @@ class TradingManager(threading.Thread):
                     account.update_config(self.load_config(account.UserID))
                     self.RunCounter = 0
             self.run_frequent_task()
-            print('Finished Running  ' + str(self.run_interval / 60) + '  minute task')
+            print('Finished ' + str(self.run_interval / 60) + ' minute task')
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
@@ -61,8 +59,6 @@ class TradingManager(threading.Thread):
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
             self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
-            print('RSI LIMIT: ' + str(self.rsi_limit))
-            # market_state = self.check_market_data()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
             if action['type'] == 'buy' and action['check']:
                 self.create_buy_order(action)
@@ -90,12 +86,6 @@ class TradingManager(threading.Thread):
 
         immediate_order = True
 
-        # TODO REMOVE AFTER DEBUG
-        lowest_sell = float(sell_orders[0][0])
-        # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
-        highest_buy = float(buy_orders[0][0])
-        price = (highest_buy + lowest_sell) / 2
-
         if immediate_order:
             # funds -> in BTC
             order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
@@ -105,7 +95,6 @@ class TradingManager(threading.Thread):
                                                              'expiretm': '+'+str(expire_time),
                                                              'oflags': 'viqc'})
             # Todo: implement loop to wait for closed confirmation
-            tx = order_info['result']
             tx_id = order_info['result']['txid'][0]
             tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
             price = tx_info['result'][tx_id]['price']
@@ -139,17 +128,8 @@ class TradingManager(threading.Thread):
                                                extrema_time=0,
                                                min_sell_margin=min_sell,
                                                date=datetime.datetime.now())
-        '''self.order_oszillator = 1
-        self.order_price = price
-        self.order_min_price = self.calculate_min_sell_margin(price, 50, 0.0026)
-        self.write_to_order_to_file(price, funds, 'b')
-        self.chart_stuff_switch = True'''
 
     def create_sell_order(self, order, last_trade):
-        # Todo: check *current* market price - DONE
-        # Todo: if satisfies -> sell -
-        # Todo: else loop (with 10 sec wait) and get current book -> create sell order
-        # Todo: write info to DB
         trading_pair = 'XXBTZEUR'
         order_time = time.time() + 60
         status = 'open'
@@ -165,15 +145,12 @@ class TradingManager(threading.Thread):
             sell_orders = order_book['result'][trading_pair]['asks']
 
             lowest_sell = float(sell_orders[0][0])
-            # sell_diff = float(sell_orders[1][0]) - float(sell_orders[0][0])
             highest_buy = float(buy_orders[0][0])
             price = (highest_buy + lowest_sell) / 2
 
             # if highest_buy > order['min_price'] and highest_buy > self.calculate_min_sell_margin():
 
-            # Todo get account balance
             funds = float(self.API.query_private('Balance')['result']['XXBT'])
-            # funds = 50
 
             if price > self.calculate_min_sell_margin(last_trade.rate, last_trade.amount_src, self.get_current_fee(trading_pair)):
                 expire_time = 10  # in seconds
@@ -187,29 +164,19 @@ class TradingManager(threading.Thread):
 
                 time.sleep(expire_time)
 
-                tx = order_info['result']
                 tx_id = order_info['result']['txid'][0]
                 tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
 
                 status = tx_info['result'][tx_id]['status']
-                '''self.order_oszillator = 0
-                self.order_price = 0
-                self.order_min_price = 0
-                self.chart_stuff_switch = True'''
             else:
                 return
 
         if status == 'closed':
-
-            # OBKGWN-SEUT2-2IBMOC
-            #tx_id = 'OBKGWN-SEUT2-2IBMOC'
-            #tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
             price = tx_info['result'][tx_id]['price']
             usd_vol = tx_info['result'][tx_id]['cost']
             btc_vol = tx_info['result'][tx_id]['vol']
             fee = tx_info['result'][tx_id]['fee']
 
-            self.write_to_order_to_file(price, funds, 's')
             print('SELL ORDER DONE! - WRITING DB STUFF')
             self.DBConnector.ExchangeTrades.create(exchange='kraken',
                                                    src_currency='BTC',
@@ -285,122 +252,20 @@ class TradingManager(threading.Thread):
                     interval_times = [sublist[0] for sublist in clean_data]
                     vw_average = [float(sublist[5]) for sublist in clean_data]  # volume weighted data
 
-                    # print('Period Start: ' + time.ctime(interval_times[0]))
-                    # print('Period End: ' + time.ctime(interval_times[-1]))
-
                     smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
                                                          15,
                                                          'moving_average')
-                    derivative = self.centered_derivative(smooth_vw_average, interval_times)
-                    # dderivative = self.centered_derivative(derivative, times)
-                    # zeros = self.find_zeros(derivative)
                     filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
-                    # current_val = clean_data[-1]
 
-                    # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
                     market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
 
                     # self.display_graph(interval_times, smooth_vw_average, filtered_z)
-                    ### self.display_graph(interval_times, smooth_vw_average, zeros)
-                    if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
-                        self.display_graph(interval_times, smooth_vw_average, filtered_z)
-                        # Todo: handle this data - compute minima/maxima - DONE
-                        # Todo: fit curve to market data - DONE
-                        # Todo: calculate maxima/minima - DONE
-                        # Todo: calculate trend - DONE
-                        # Todo: return something (buy? sell?) - DONE
-                        # methods:
-                        # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
-                        # https://en.wikipedia.org/wiki/Moving_average#Other_weightings
-                        # en.wikipedia.org/wiki/Local_regression
-                        # https://en.wikipedia.org/wiki/Kernel_smoother
-                        # https://en.wikipedia.org/wiki/Moving_least_squares
-                        #
-                        ###############
-                        # Further applied reading:
-                        # http://connor-johnson.com/2014/11/23/time-series-forecasting-in-python-and-r/
-                        # https://www.quantstart.com/articles/Forecasting-Financial-Time-Series-Part-1
-                        # http://fluid-turb.wikidot.com/time-series-analysis
-                        # https://www.quantstart.com/articles/Beginners-Guide-to-Time-Series-Analysis
-                        # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fwww.petertessin.com%2FTimeSeries.pdf
-                        # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fconference.scipy.org%2Fscipy2011%2Fslides%2Fmckinney_time_series.pdf
-                        # https://nbviewer.jupyter.org/github/changhiskhan/talks/blob/master/pydata2012/pandas_timeseries.ipynb
-                        # https://nbviewer.jupyter.org/github/jvns/talks/blob/master/pyconca2013/pistes-cyclables.ipynb
-                        # https://nbviewer.jupyter.org/github/lge88/UCSD_BigData/blob/master/notebooks/weather/Weather%20Analysis.ipynb
-                        #
-                        ###############
-                        # Indicators (trend)
-                        # RSI relative strength index
 
                 err_cnt = 3
             except Exception as e:
                 print('ERROR - could not check market data')
                 print(e)
                 err_cnt += 1
-
-        '''try:
-            market_state = self.API.query_public('OHLC', {'pair': trading_pair,
-                                                          'interval': interval_size}) # Todo: fix JSONDecodeError
-            if len(market_state['error']) == 0:
-                market_data = market_state['result'][trading_pair]
-
-                # Data extraction of compound list
-                current_period = market_data[-1]
-                clean_data = market_data[:-1]
-                clean_data = self.interpolate_nan(clean_data, 5)
-                interval_times = [sublist[0] for sublist in clean_data]
-                vw_average = [float(sublist[5]) for sublist in clean_data]  # volume weighted data
-
-                print('Period Start: ' + time.ctime(interval_times[0]))
-                print('Period End: ' + time.ctime(interval_times[-1]))
-
-                smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
-                                                     15,
-                                                     'moving_average')
-                derivative = self.centered_derivative(smooth_vw_average, interval_times)
-                # dderivative = self.centered_derivative(derivative, times)
-                # zeros = self.find_zeros(derivative)
-                filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
-                # current_val = clean_data[-1]
-
-                # market_dat = [current_period, interval_times, smooth_vw_average, zeros]
-                market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
-
-                # self.display_graph(interval_times, smooth_vw_average, filtered_z)
-                ### self.display_graph(interval_times, smooth_vw_average, zeros)
-                if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
-                    self.display_graph(interval_times, smooth_vw_average, filtered_z)
-                    # Todo: handle this data - compute minima/maxima - DONE
-                    # Todo: fit curve to market data - DONE
-                    # Todo: calculate maxima/minima - DONE
-                    # Todo: calculate trend - DONE
-                    # Todo: return something (buy? sell?) - DONE
-                    # methods:
-                    # https://stackoverflow.com/questions/7061071/finding-the-min-max-of-a-stock-chart
-                    # https://en.wikipedia.org/wiki/Moving_average#Other_weightings
-                    # en.wikipedia.org/wiki/Local_regression
-                    # https://en.wikipedia.org/wiki/Kernel_smoother
-                    # https://en.wikipedia.org/wiki/Moving_least_squares
-                    #
-                    ###############
-                    # Further applied reading:
-                    # http://connor-johnson.com/2014/11/23/time-series-forecasting-in-python-and-r/
-                    # https://www.quantstart.com/articles/Forecasting-Financial-Time-Series-Part-1
-                    # http://fluid-turb.wikidot.com/time-series-analysis
-                    # https://www.quantstart.com/articles/Beginners-Guide-to-Time-Series-Analysis
-                    # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fwww.petertessin.com%2FTimeSeries.pdf
-                    # chrome-extension://lnagobkdlgiobpknboclgafebmkoocce/scripts/externalLibraries/pdf/web/viewer.html?file=http%3A%2F%2Fconference.scipy.org%2Fscipy2011%2Fslides%2Fmckinney_time_series.pdf
-                    # https://nbviewer.jupyter.org/github/changhiskhan/talks/blob/master/pydata2012/pandas_timeseries.ipynb
-                    # https://nbviewer.jupyter.org/github/jvns/talks/blob/master/pyconca2013/pistes-cyclables.ipynb
-                    # https://nbviewer.jupyter.org/github/lge88/UCSD_BigData/blob/master/notebooks/weather/Weather%20Analysis.ipynb
-                    #
-                    ###############
-                    # Indicators (trend)
-                    # RSI relative strength index
-        except Exception as e:
-            print('ERROR - could not check market data')
-            print(e)'''
-
 
         return market_dat
 
@@ -413,7 +278,7 @@ class TradingManager(threading.Thread):
         # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
         matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
 
-        print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
+        # print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
         # self.write_extrema_to_file(extrema[-1], window_start_index)
 
         # Todo: if there is a matching extrema -> check if current price is even higher
@@ -424,6 +289,8 @@ class TradingManager(threading.Thread):
             recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(market_data, 0.8)
+
+            print('EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
 
             if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
