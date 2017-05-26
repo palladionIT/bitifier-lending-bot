@@ -2,6 +2,7 @@ import getpass
 import re
 import threading
 import time
+import os
 import logging
 from configparser import ConfigParser
 
@@ -67,7 +68,7 @@ class Bitifier:
                         print('Enter a valid account type:')
 
                 try:
-                    self.DBConnector.User.get(self.DBConnector.User.name == username)
+                    self.DBConnector.User.get(self.DBConnector.User.name == username and self.DBConnector.User.exchange == exchange)
                 except self.DBConnector.User.DoesNotExist:
                     self.DBConnector.User.create(exchange=exchange,
                                                  name=username,
@@ -128,14 +129,15 @@ class Bitifier:
         self.Threads.append(fund_manager)
         self.Threads.append(trade_manager)
 
-        trade_manager.run()
-        return
+        # fund_manager.run()
+        #trade_manager.run()
+        #return
         #fund_manager.run()
 
         # Forking into background and running maintenance checks
         sleep_time = 600
         child_pid = 0 # Remove for deployment and turn on forking
-        # child_pid = os.fork()
+        #child_pid = os.fork()
 
         if child_pid == 0:
             while 1:

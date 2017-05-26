@@ -34,6 +34,7 @@ class TradingManager(threading.Thread):
     order_min_price = 1651.126939
 
     def __init__(self, db_connector, db_lock, accounts, api, logger):
+        super(TradingManager, self).__init__()
         self.DBConnector = db_connector
         self.DBLock = db_lock
         self.Accounts = accounts
