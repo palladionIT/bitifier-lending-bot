@@ -61,24 +61,18 @@ class FundingManager(threading.Thread):
         self.high_hold_threshold = {key: int(val) for (key, val) in config['high_hold_threshold'].items()}
 
     def run(self):
-        # Todo: maybe try-except inside while loop to locally contain errors
-        try:
-            while True:
-                print('Running ' + str(self.run_interval / 60) + ' minute task')
-                self.RunCounter += 1
+        while True:
+            print('Running ' + str(self.run_interval / 60) + ' minute task')
+            self.RunCounter += 1
 
-                if self.RunCounter >= 6:
-                    for account in self.Accounts:
-                        print('Updating configuration settings for funding.')
-                        self.update_config(self.load_config(account.UserID))
-                        self.RunCounter = 0
-                self.run_frequent_task()
-                print('Finished Running ' + str(self.run_interval / 60) + ' minute task')
-                time.sleep(self.run_interval)
-        except Exception as e:
-            #self.Logger.error('FUNDING MANAGER ')
-            print('FUNDING MANAGER: Error while handling recurring task.')
-            print(e)
+            if self.RunCounter >= 6:
+                for account in self.Accounts:
+                    print('Updating configuration settings for funding.')
+                    self.update_config(self.load_config(account.UserID))
+                    self.RunCounter = 0
+            self.run_frequent_task()
+            print('Finished Running ' + str(self.run_interval / 60) + ' minute task')
+            time.sleep(self.run_interval)
 
     def run_frequent_task(self):
         '''for account in self.Accounts:
@@ -90,23 +84,28 @@ class FundingManager(threading.Thread):
         self.offer_funding()
 
     def offer_funding(self):
-        self.clear_active_offers()
-        self.get_available_funds()
-        self.load_exchange_rates()
-        self.calculate_limts()
-        offers = self.calculate_offers()
+        try:
+            self.clear_active_offers()
+            self.get_available_funds()
+            self.load_exchange_rates()
+            self.calculate_limts()
+            offers = self.calculate_offers()
 
-        for currency, loans in offers.items():  # Todo: write information to database
-            for loan in loans:
-                success, return_code, response = self.API.funding_new_offer(currency=currency,
-                                                                            amount=loan['amt'],
-                                                                            rate=loan['rate'],
-                                                                            period=loan['time'],
-                                                                            direction='lend')
+            for currency, loans in offers.items():  # Todo: write information to database
+                for loan in loans:
+                    success, return_code, response = self.API.funding_new_offer(currency=currency,
+                                                                                amount=loan['amt'],
+                                                                                rate=loan['rate'],
+                                                                                period=loan['time'],
+                                                                                direction='lend')
 
-                if not success:
-                    print('Error ' + return_code + ' creating funding lends.')
-                    print (str(response))
+                    if not success:
+                        print('Error ' + return_code + ' creating funding lends.')
+                        print (str(response))
+        except Exception as e:
+            #self.Logger.error('FUNDING MANAGER ')
+            print('FUNDING MANAGER: Error while handling recurring task.')
+            print(e)
 
 
     def clear_active_offers(self,):
