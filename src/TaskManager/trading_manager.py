@@ -199,8 +199,6 @@ class TradingManager(threading.Thread):
         except self.DBConnector.ExchangeTrades.DoesNotExist:
             print('ERROR - TRADING MANAGER - could not retrieve last trade.')
             trade = None
-        # User.select().order_by(User.id.desc()).get()
-        # return self.DBConnector.ExchangeTrades()
         return trade
 
     def get_account_state(self):
@@ -277,12 +275,7 @@ class TradingManager(threading.Thread):
             current_time = time.time()
             window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
             window_end_index = len(market_data) - 4
-
-            # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
             matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
-
-            # print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
-            # self.write_extrema_to_file(extrema[-1], window_start_index)
 
             # Todo: if there is a matching extrema -> check if current price is even higher
             # Todo: check if current price is higher/lower && if it is within a very small
@@ -443,7 +436,6 @@ class TradingManager(threading.Thread):
             if x_dat[i] < 0 and x_dat[i + 1] > 0:
                 zeros.append([i, i + 1, 1])
         return zeros
-        # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
     def clean_extrema(self, zeros, y_dat, diff=None, reverse=False):
         z = []
@@ -566,10 +558,6 @@ class TradingManager(threading.Thread):
             start = len(data) - window_size
 
         frame = data[start:len(data)]
-
-        p_max = max(frame)
-        p_min = min(frame)
-
         even = len(frame) % 2 == 0
         half = len(frame) / 2
         second_start = 0
@@ -611,15 +599,7 @@ class TradingManager(threading.Thread):
 
     def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
-        # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
-        # x_dat = [t - x_dat[0] for t in x_dat]
         plt.plot(x_dat, y_dat, 'k', label='smoothed_data')
-        # plt.plot(times, derivative, 'r--', label='derivative')
-        # plt.axhline(y=0)
-        # plt.plot(times, dderivative, 'g--', label='2nd order derivative')
-        '''for z in zeros:
-            pass
-            # plt.axvline(x=times[z[0]], color='r')'''
         if extrema:
             if len(extrema[0]) < 4:
                 for z in extrema:
@@ -646,7 +626,6 @@ class TradingManager(threading.Thread):
         # plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
         #           [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
         plt.show(block=False)
-        # plt.show(block=True)
         print('done')
 
     def write_to_order_to_file(self, price, amount, type):
