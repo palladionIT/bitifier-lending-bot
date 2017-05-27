@@ -22,6 +22,7 @@ class TradingManager(threading.Thread):
     Logger = None
     run_interval = 60
     rsi_limit = 15
+    trend = 0
 
     RunCounter = 0
 
@@ -56,10 +57,11 @@ class TradingManager(threading.Thread):
 
     def run_frequent_task(self):
         try:
-            last_trade = self.get_last_action()
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
             self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
+            self.trend = self.calculate_trend(market_state[3], 120)
+            last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
             if action['type'] == 'buy' and action['check']:
                 self.create_buy_order(action)
@@ -199,8 +201,6 @@ class TradingManager(threading.Thread):
         except self.DBConnector.ExchangeTrades.DoesNotExist:
             print('ERROR - TRADING MANAGER - could not retrieve last trade.')
             trade = None
-        # User.select().order_by(User.id.desc()).get()
-        # return self.DBConnector.ExchangeTrades()
         return trade
 
     def get_account_state(self):
@@ -271,16 +271,13 @@ class TradingManager(threading.Thread):
         return market_dat
 
     def check_conditions(self, current_interval, interval_times, market_data, real_market_data, extrema, last_trade):
+
+
         window_size = 10
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
         window_end_index = len(market_data) - 4
-
-        # extrema = self.extrema_in_interval(extrema, window_start_index, len(interval_times) - 1)
         matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
-
-        # print('LAST EXTREMA INDEX: ' + str(extrema[-1][0]) + ' | WINDOW START INDEX: ' + str(window_start_index) + ' | WINDOW END INDEX: ' + str(window_end_index))
-        # self.write_extrema_to_file(extrema[-1], window_start_index)
 
         # Todo: if there is a matching extrema -> check if current price is even higher
         # Todo: check if current price is higher/lower && if it is within a very small
@@ -311,12 +308,14 @@ class TradingManager(threading.Thread):
         else:
             order = {'type': 'none',
                      'check': False}
+
+        print('{}'.format(self.calculate_trend(market_data, 120)))
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
         print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
         if extremum[3] > 0:
-            if rsi[-1] < self.rsi_limit:
+            if rsi[-1] < self.rsi_limit and self.trend > 0:
                 #if
                 return {'type': 'buy',
                         'check': True}
@@ -437,7 +436,6 @@ class TradingManager(threading.Thread):
             if x_dat[i] < 0 and x_dat[i + 1] > 0:
                 zeros.append([i, i + 1, 1])
         return zeros
-        # return np.where(np.array(list(map(abs, x_dat))) <= margin)[0]
 
     def clean_extrema(self, zeros, y_dat, diff=None, reverse=False):
         z = []
@@ -552,11 +550,32 @@ class TradingManager(threading.Thread):
                 return high  # return high to always make profit
         return None
 
+    def calculate_trend(self, data, window_size, start=None):
+        if not start:
+            start = len(data) - window_size
+
+        if start > len(data) - window_size:  # to respect data end
+            start = len(data) - window_size
+
+        frame = data[start:len(data)]
+        even = len(frame) % 2 == 0
+        half = len(frame) / 2
+        second_start = 0
+
+        if not even:
+            second_start = 1
+
+        first = frame[0:int(half)]
+        second = frame[int(half + second_start):len(frame)]
+
+        return (sum(second) - sum(first)) / sum(frame)
+
+
     def calculate_adaptive_rsi_lim(self, data):
 
         data_timeframe = 60
 
-        frame = data[len(data)-data_timeframe:len(data)]
+        '''frame = data[len(data)-data_timeframe:len(data)]
 
         p_max = max(frame)
         p_min = min(frame)
@@ -571,23 +590,16 @@ class TradingManager(threading.Thread):
         first = frame[0:int(half)]
         second = frame[int(half + second_start):len(frame)]
 
-        t = (sum(second) - sum(first)) / sum(frame) + 1
+        t = (sum(second) - sum(first)) / sum(frame) + 1'''
+        t = self.calculate_trend(data, data_timeframe) + 1  # +1 for shifting interval to [0, 2]
 
-        t = (t) * (1 / 2)
+        t = (t) * (1 / 2)  # *(1/2) to scale interval to [0, 1]
 
-        return (1 - t) * 15 + t * 25
+        return (1 - t) * 15 + t * 25  # interpolate linearly between [15, 25]
 
     def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
-        # plt.plot(times, [float(i) for i in vw_average], 'b--', label='original_data')
-        # x_dat = [t - x_dat[0] for t in x_dat]
         plt.plot(x_dat, y_dat, 'k', label='smoothed_data')
-        # plt.plot(times, derivative, 'r--', label='derivative')
-        # plt.axhline(y=0)
-        # plt.plot(times, dderivative, 'g--', label='2nd order derivative')
-        '''for z in zeros:
-            pass
-            # plt.axvline(x=times[z[0]], color='r')'''
         if extrema:
             if len(extrema[0]) < 4:
                 for z in extrema:
@@ -614,7 +626,6 @@ class TradingManager(threading.Thread):
         # plt.xticks([x_dat[i] for i in range(0, len(x_dat), 30)],
         #           [time.ctime(x_dat[i]) for i in range(0, len(x_dat), 30)])
         plt.show(block=False)
-        # plt.show(block=True)
         print('done')
 
     def write_to_order_to_file(self, price, amount, type):
