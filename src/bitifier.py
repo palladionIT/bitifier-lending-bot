@@ -136,6 +136,16 @@ class Bitifier:
 
         # Forking into background and running maintenance checks
         sleep_time = 600
+
+        while 1:
+            print('Running ' + str(sleep_time / 60) + ' minute  maintenance task')
+
+            for thread in self.Threads:
+                if not thread.isAlive():
+                    thread.start()
+
+            time.sleep(sleep_time)
+        '''
         child_pid = 0 # Remove for deployment and turn on forking
         #child_pid = os.fork()
 
@@ -151,6 +161,7 @@ class Bitifier:
         else:
             print('Child PID: ' + str(child_pid))
             pass
+        '''
 
     def setup_funding_manager(self, db_connector, db_lock, logger):
 
