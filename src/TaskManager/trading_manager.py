@@ -22,6 +22,7 @@ class TradingManager(threading.Thread):
     Logger = None
     run_interval = 60
     rsi_limit = 15
+    trend = 0
 
     RunCounter = 0
 
@@ -59,6 +60,7 @@ class TradingManager(threading.Thread):
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
             self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
+            self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
             if action['type'] == 'buy' and action['check']:
@@ -270,52 +272,50 @@ class TradingManager(threading.Thread):
 
     def check_conditions(self, current_interval, interval_times, market_data, real_market_data, extrema, last_trade):
 
-        if self.calculate_trend(market_data, 120) >= 0:
-            window_size = 10
-            current_time = time.time()
-            window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
-            window_end_index = len(market_data) - 4
-            matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
 
-            # Todo: if there is a matching extrema -> check if current price is even higher
-            # Todo: check if current price is higher/lower && if it is within a very small
-            # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
+        window_size = 10
+        current_time = time.time()
+        window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_size * 60])
+        window_end_index = len(market_data) - 4
+        matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
 
-            if len(matching_extrema) > 0:
-                recent_extrema = matching_extrema[-1]
+        # Todo: if there is a matching extrema -> check if current price is even higher
+        # Todo: check if current price is higher/lower && if it is within a very small
+        # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
 
-                rsi = self.relative_strength_index(market_data, 0.8)
+        if len(matching_extrema) > 0:
+            recent_extrema = matching_extrema[-1]
 
-                print('EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
+            rsi = self.relative_strength_index(market_data, 0.8)
 
-                if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
-                    self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
-                    self.chart_stuff = False
+            print('EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
 
-                if not last_trade:
-                    order = self.check_buy_order(recent_extrema, rsi)
-                else:
-                    if last_trade.src_currency == 'USD':
-                        order = self.check_sell_order(recent_extrema, rsi, last_trade)
+            if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
+                self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
+                self.chart_stuff = False
 
-                    elif last_trade.src_currency == 'BTC':
-                        order = self.check_buy_order(recent_extrema, rsi, last_trade)
-                    else:
-                        order = {'type': 'none',
-                                 'check': False}
+            if not last_trade:
+                order = self.check_buy_order(recent_extrema, rsi)
             else:
-                order = {'type': 'none',
-                         'check': False}
+                if last_trade.src_currency == 'USD':
+                    order = self.check_sell_order(recent_extrema, rsi, last_trade)
+
+                elif last_trade.src_currency == 'BTC':
+                    order = self.check_buy_order(recent_extrema, rsi, last_trade)
+                else:
+                    order = {'type': 'none',
+                             'check': False}
         else:
             order = {'type': 'none',
                      'check': False}
+
         print('{}'.format(self.calculate_trend(market_data, 120)))
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
         print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
         if extremum[3] > 0:
-            if rsi[-1] < self.rsi_limit:
+            if rsi[-1] < self.rsi_limit and self.trend > 0:
                 #if
                 return {'type': 'buy',
                         'check': True}
