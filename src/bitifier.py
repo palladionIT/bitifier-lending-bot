@@ -26,7 +26,7 @@ class Bitifier:
 
     run_counter = 0
 
-    def __init__(self, accounts):
+    def __init__(self, accounts, functionality):
         print('...setting up bitifier bot')
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
@@ -124,23 +124,26 @@ class Bitifier:
         #child_pid = 0 # Remove for deployment and turn on forking
         child_pid = os.fork()
 
-        dbLock = threading.Lock()
-
-        fund_manager = self.setup_funding_manager(self.DBConnector, dbLock, None)
-        trade_manager = self.setup_trading_manager(self.DBConnector, dbLock, None)
-
-        self.Threads.append(fund_manager)
-        self.Threads.append(trade_manager)
-
-        # fund_manager.run()
-        #trade_manager.run()
-        #return
-        #fund_manager.run()
-
-        # Forking into background and running maintenance checks
-        sleep_time = 600
-
         if child_pid == 0:
+
+            dbLock = threading.Lock()
+
+            if functionality['funding']:
+                fund_manager = self.setup_funding_manager(self.DBConnector, dbLock, None)
+                self.Threads.append(fund_manager)
+
+            if functionality['trading']:
+                trade_manager = self.setup_trading_manager(self.DBConnector, dbLock, None)
+                self.Threads.append(trade_manager)
+
+            # fund_manager.run()
+            #trade_manager.run()
+            #return
+            #fund_manager.run()
+
+            # Forking into background and running maintenance checks
+            sleep_time = 600
+
             while 1:
                 print('Running ' + str(sleep_time / 60) + ' minute  maintenance task')
 
