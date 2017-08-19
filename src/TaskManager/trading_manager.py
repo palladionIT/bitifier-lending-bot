@@ -68,7 +68,7 @@ class TradingManager(threading.Thread):
             if action['type'] == 'sell' and action['check']:
                 self.create_sell_order(action, last_trade)
         except Exception as e:
-            print('ERROR - while performing trading')
+            print('...ERROR - while performing trading')
             print(e)
 
     def create_buy_order(self, order):
@@ -236,7 +236,7 @@ class TradingManager(threading.Thread):
         market_dat = None
 
         trading_pair = 'XXBTZEUR'
-        interval_size = '1'  # in minutes
+        interval_size = '15'  # in minutes
         err_cnt = 0
 
         while err_cnt < 3:
@@ -261,12 +261,18 @@ class TradingManager(threading.Thread):
                     market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
 
                     # self.display_graph(interval_times, smooth_vw_average, filtered_z)
+                    err_cnt = 3
+                else:
+                    err_cnt += 1
+                    if err_cnt >= 3:
+                        raise Exception
 
-                err_cnt = 3
             except Exception as e:
-                print('ERROR - could not check market data')
-                print(e)
+                print('......ERROR - could not check market data')
+                print('......{}'.format(e))
                 err_cnt += 1
+                if err_cnt >= 3:
+                    raise Exception
 
         return market_dat
 
