@@ -315,13 +315,14 @@ class TradingManager(threading.Thread):
             order = {'type': 'none',
                      'check': False}
 
-        print('{}'.format(self.calculate_trend(market_data, 120)))
+        # print('Trend: {}'.format(self.calculate_trend(market_data, 120)))
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
         print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
         if extremum[3] > 0:
-            if rsi[-1] < self.rsi_limit and self.trend > 0:
+            #if rsi[-1] < self.rsi_limit and self.trend > 0:
+            if rsi[-1] < self.rsi_limit:
                 #if
                 return {'type': 'buy',
                         'check': True}
