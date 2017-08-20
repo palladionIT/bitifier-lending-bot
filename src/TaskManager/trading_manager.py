@@ -33,6 +33,7 @@ class TradingManager(threading.Thread):
     order_oszillator = 1
     order_price = 1642.5515
     order_min_price = 1651.126939
+    dry_run = True
 
     def __init__(self, db_connector, db_lock, accounts, api, logger):
         super(TradingManager, self).__init__()
@@ -63,13 +64,13 @@ class TradingManager(threading.Thread):
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
-            if action['type'] == 'buy' and action['check']:
+            if action['type'] == 'buy' and action['check'] and not self.dry_run:
                 self.create_buy_order(action)
-            if action['type'] == 'sell' and action['check']:
+            if action['type'] == 'sell' and action['check'] and not self.dry_run:
                 self.create_sell_order(action, last_trade)
         except Exception as e:
             print('...ERROR - while performing trading')
-            print(e)
+            print('...{}'.format(e))
 
     def create_buy_order(self, order):
 
