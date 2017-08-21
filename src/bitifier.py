@@ -30,8 +30,8 @@ class Bitifier:
         print('...setting up bitifier bot')
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
-        #passphrase = getpass.getpass('Enter the database password: ')
-        passphrase = 'testphun123'
+        passphrase = getpass.getpass('Enter the database password: ')
+        #passphrase = 'testphun123'
 
         self.DBConnector = DatabaseConnector(passphrase)
 
