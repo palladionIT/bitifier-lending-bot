@@ -63,7 +63,7 @@ class TradingManager(threading.Thread):
             self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
-            action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[4], last_trade)
+            action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[5], market_state[4], last_trade)
             if action['type'] == 'buy' and action['check'] and not self.dry_run:
                 self.create_buy_order(action)
             if action['type'] == 'sell' and action['check'] and not self.dry_run:
@@ -251,15 +251,17 @@ class TradingManager(threading.Thread):
                     current_period = market_data[-1]
                     clean_data = market_data[:-1]
                     clean_data = self.interpolate_nan(clean_data, 5)
+                    clean_close_data = self.interpolate_nan(clean_data, 4)
                     interval_times = [sublist[0] for sublist in clean_data]
                     vw_average = [float(sublist[5]) for sublist in clean_data]  # volume weighted data
+                    close_data = [float(sublist[4]) for sublist in clean_close_data]
 
                     smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
-                                                         15,
+                                                         15 * interval_size,
                                                          'moving_average')
                     filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
 
-                    market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z]
+                    market_dat = [current_period, interval_times, smooth_vw_average, vw_average, filtered_z, close_data]
 
                     # self.display_graph(interval_times, smooth_vw_average, filtered_z)
                     err_cnt = 3
@@ -277,7 +279,7 @@ class TradingManager(threading.Thread):
 
         return market_dat
 
-    def check_conditions(self, current_interval, interval_times, market_data, real_market_data, extrema, last_trade):
+    def check_conditions(self, current_interval, interval_times, market_data, real_market_data, real_close_data, extrema, last_trade):
 
 
         window_size = 10
