@@ -20,9 +20,13 @@ class TradingManager(threading.Thread):
     API = None
     Accounts = []
     Logger = None
+
+    # Parameters
     run_interval = 60
     rsi_limit = 15
     trend = 0
+    data_interval = 15
+    rsi_interval_size = 14
 
     RunCounter = 0
 
@@ -237,7 +241,7 @@ class TradingManager(threading.Thread):
         market_dat = None
 
         trading_pair = 'XXBTZEUR'
-        interval_size = '15'  # in minutes
+        interval_size = self.data_interval  # in minutes
         err_cnt = 0
 
         while err_cnt < 3:
@@ -292,10 +296,13 @@ class TradingManager(threading.Thread):
         # Todo: check if current price is higher/lower && if it is within a very small
         # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
 
+        print("...14 Epoch Real RSI: {} - window: {}".format(self.relative_strength_index(real_close_data, 0.235)[-1], 0.235))
+        #print("14 Epoch Smooth RSI: {} - window: {}".format(self.relative_strength_index(market_data, 0.2333333)[-1], 0.23333333))
+
         if len(matching_extrema) > 0:
             recent_extrema = matching_extrema[-1]
 
-            rsi = self.relative_strength_index(market_data, 0.8)
+            rsi = self.relative_strength_index(real_close_data, 0.235) # 0.8 -> (0.8 * 60) # TODO: change to resemble real interval count
 
             print('EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
 
@@ -337,7 +344,7 @@ class TradingManager(threading.Thread):
         print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0:
-            if rsi[-1] > 80:
+            if rsi[-1] > 70:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
 
