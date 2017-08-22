@@ -285,19 +285,14 @@ class TradingManager(threading.Thread):
 
     def check_conditions(self, current_interval, interval_times, market_data, real_market_data, real_close_data, extrema, last_trade):
 
-
+        # Todo: change the interval calculations to only use period indices
         window_start = 5 # in trading epochs before now
         window_size = 4 # in trading epochs
         current_time = time.time()
-        window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_start * 60 * self.data_interval]) # Todo: fix this to resemble trade intervals
-        # window_end_index = len(market_data) - 4 # Todo: make
+        window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_start * 60 * self.data_interval])
         window_end_index = window_start_index + window_size
         assert (len(market_data) >= window_end_index)
         matching_extrema = [d for d in reversed(extrema) if d[0] >= window_start_index and d[0] < window_end_index]
-
-        # Todo: if there is a matching extrema -> check if current price is even higher
-        # Todo: check if current price is higher/lower && if it is within a very small
-        # Todo: IMPORTANT DO THIS CHECK WITH REAL MARKET DATA OR VERY MINOR SMOOTHED DATA (10 min smooth)
 
         #print("...14 Epoch Real RSI: {} - window: {}".format(self.relative_strength_index(real_close_data, 0.235)[-1], 0.235))
         #print("14 Epoch Smooth RSI: {} - window: {}".format(self.relative_strength_index(market_data, 0.2333333)[-1], 0.23333333))
