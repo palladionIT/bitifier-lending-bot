@@ -302,14 +302,14 @@ class TradingManager(threading.Thread):
         #print("...14 Epoch Real RSI: {} - window: {}".format(self.relative_strength_index(real_close_data, 0.235)[-1], 0.235))
         #print("14 Epoch Smooth RSI: {} - window: {}".format(self.relative_strength_index(market_data, 0.2333333)[-1], 0.23333333))
 
-        print("Extrama count: {}".format(len(matching_extrema)))
+        print("...Extrama count: {}".format(len(matching_extrema)))
 
         if len(matching_extrema) > 0:
             recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(real_close_data, 0.235) # 0.8 -> (0.8 * 60) # TODO: change to resemble real interval count
 
-            print('EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
+            print('...EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
 
             if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
@@ -334,7 +334,7 @@ class TradingManager(threading.Thread):
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
-        print('BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
+        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
         if extremum[3] > 0:
             #if rsi[-1] < self.rsi_limit and self.trend > 0:
             if rsi[-1] < self.rsi_limit:
@@ -346,7 +346,7 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extremum, rsi, last_order):
-        print('SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
+        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0:
             if rsi[-1] > 70:
