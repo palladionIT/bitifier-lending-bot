@@ -64,7 +64,7 @@ class TradingManager(threading.Thread):
         try:
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
-            self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3])
+            self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3], [20, 25])
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[5], market_state[4], last_trade)
@@ -261,7 +261,7 @@ class TradingManager(threading.Thread):
                     close_data = [float(sublist[4]) for sublist in clean_close_data]
 
                     smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
-                                                         15 * interval_size,
+                                                         15 * interval_size / 2,
                                                          'moving_average')
                     filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
 
@@ -303,21 +303,22 @@ class TradingManager(threading.Thread):
             recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(real_close_data, 0.235) # 0.8 -> (0.8 * 60) # TODO: change to resemble real interval count
+            min_rsi = self.rsi_min_interval(rsi, [window_start_index, window_end_index])
 
-            print('...EXTREMA Index: {} | RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], rsi[-1], self.rsi_limit, time.ctime()))
+            print('...EXTREMA Index: {} | Min-RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], min_rsi, self.rsi_limit, time.ctime()))
 
             if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
                 self.chart_stuff = False
 
             if not last_trade:
-                order = self.check_buy_order(recent_extrema, rsi)
+                order = self.check_buy_order(recent_extrema, min_rsi)
             else:
                 if last_trade.src_currency == 'USD':
-                    order = self.check_sell_order(recent_extrema, rsi, last_trade)
+                    order = self.check_sell_order(recent_extrema, min_rsi, last_trade)
 
                 elif last_trade.src_currency == 'BTC':
-                    order = self.check_buy_order(recent_extrema, rsi, last_trade)
+                    order = self.check_buy_order(recent_extrema, min_rsi, last_trade)
                 else:
                     order = {'type': 'none',
                              'check': False}
@@ -329,10 +330,10 @@ class TradingManager(threading.Thread):
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
-        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]))
+        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi))
         if extremum[3] > 0:
             #if rsi[-1] < self.rsi_limit and self.trend > 0:
-            if rsi[-1] < self.rsi_limit:
+            if rsi < self.rsi_limit:
                 #if
                 return {'type': 'buy',
                         'check': True}
@@ -341,10 +342,10 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extremum, rsi, last_order):
-        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi[-1]) + ' | value: ' + str(extremum[-1]))
+        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0:
-            if rsi[-1] > 70:
+            if rsi > 70:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
 
@@ -432,6 +433,9 @@ class TradingManager(threading.Thread):
         d_avg = self.smooth_data(None, d.tolist(), window, 'simple_moving_average')
         rs = np.divide(u_avg, d_avg)
         return [-1] * int(window * 60) + (100 - 100 / (1 + rs)).tolist()  # pad result for missing beginning with -1
+
+    def rsi_min_interval(self, rsi, interval):
+        return min(rsi[interval[0]:interval[1]])
 
     def centered_derivative(self, x_dat, t, type='centered'):
         d = []
@@ -588,7 +592,7 @@ class TradingManager(threading.Thread):
         return (sum(second) - sum(first)) / sum(frame)
 
 
-    def calculate_adaptive_rsi_lim(self, data):
+    def calculate_adaptive_rsi_lim(self, data, limits):
 
         data_timeframe = 60
 
@@ -612,7 +616,7 @@ class TradingManager(threading.Thread):
 
         t = (t) * (1 / 2)  # *(1/2) to scale interval to [0, 1]
 
-        return (1 - t) * 15 + t * 25  # interpolate linearly between [15, 25]
+        return (1 - t) * limits[0] + t * limits[1]  # interpolate linearly between [15, 25]
 
     def display_graph(self, x_dat, y_dat, extrema=None, yhlines=None):
         plt.figure()
