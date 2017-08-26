@@ -330,7 +330,7 @@ class TradingManager(threading.Thread):
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
-        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi))
+        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi))
         if extremum[3] > 0:
             #if rsi[-1] < self.rsi_limit and self.trend > 0:
             if rsi < self.rsi_limit:
@@ -342,7 +342,7 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extremum, rsi, last_order):
-        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | rsi: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
+        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0:
             if rsi > 70:
