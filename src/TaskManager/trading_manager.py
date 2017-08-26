@@ -287,7 +287,7 @@ class TradingManager(threading.Thread):
 
         # Todo: change the interval calculations to only use period indices
         window_start = 5 # in trading epochs before now
-        window_size = 4 # in trading epochs
+        window_size = 5 # in trading epochs
         current_time = time.time()
         window_start_index = max([i for i, t in enumerate(interval_times) if t <= current_time - window_start * 60 * self.data_interval])
         window_end_index = window_start_index + window_size
