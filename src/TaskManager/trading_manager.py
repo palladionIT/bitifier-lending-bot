@@ -322,9 +322,11 @@ class TradingManager(threading.Thread):
                 else:
                     order = {'type': 'none',
                              'check': False}
+            self.run_interval = 60
         else:
             order = {'type': 'none',
                      'check': False}
+            self.run_interval = 60 * self.data_interval
 
         # print('Trend: {}'.format(self.calculate_trend(market_data, 120)))
         return order
