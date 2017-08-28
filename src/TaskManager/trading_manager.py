@@ -22,11 +22,21 @@ class TradingManager(threading.Thread):
     Logger = None
 
     # Parameters
+
+    # - General Functions
+    ignore_maxima = False
+
+    # - Timings
     run_interval = 60
-    rsi_limit = 15
     trend = 0
     data_interval = 15
     rsi_interval_size = 14
+
+    # - RSI Calculation
+    rsi_limit = 15
+    rsi_limit_low = 20
+    rsi_limit_high = 25
+
 
     RunCounter = 0
 
@@ -64,7 +74,7 @@ class TradingManager(threading.Thread):
         try:
             # account_state = self.get_account_state()
             market_state = self.check_market_data(3)
-            self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3], [20, 25])
+            self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3], [self.rsi_limit_low, self.rsi_limit_high])
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[5], market_state[4], last_trade)
@@ -299,7 +309,7 @@ class TradingManager(threading.Thread):
 
         print("...Extrama count: {}".format(len(matching_extrema)))
 
-        if len(matching_extrema) > 0:
+        if len(matching_extrema) > 0 or self.ignore_maxima:
             recent_extrema = matching_extrema[-1]
 
             rsi = self.relative_strength_index(real_close_data, 0.235) # 0.8 -> (0.8 * 60) # TODO: change to resemble real interval count
@@ -333,7 +343,7 @@ class TradingManager(threading.Thread):
 
     def check_buy_order(self, extremum, rsi, last_order=None):
         print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi))
-        if extremum[3] > 0:
+        if extremum[3] > 0 or self.ignore_maxima:
             #if rsi[-1] < self.rsi_limit and self.trend > 0:
             if rsi < self.rsi_limit:
                 #if
@@ -346,7 +356,7 @@ class TradingManager(threading.Thread):
     def check_sell_order(self, extremum, rsi, last_order):
         print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
 
-        if extremum[3] < 0:
+        if extremum[3] < 0 or self.ignore_maxima:
             if rsi > 70:
                 trading_pair = 'XXBTZEUR'
                 fee_flag = 'fees'
