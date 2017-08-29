@@ -11,7 +11,7 @@ def main(argv):
                  'funding': False}
 
     try:
-        opts, args = getopt.getopt(argv, 'ha:tf', ['accounts='])
+        opts, args = getopt.getopt(argv, 'ha:tfd', ['accounts='])
     except getopt.GetoptError:
         print('usage: __init__.py -a <comma_seperated_accounts> [-t, -f]')
         sys.exit(2)
@@ -25,6 +25,8 @@ def main(argv):
             functionality['trading'] = True
         elif opt in ('-f'):
             functionality['funding'] = True
+        elif opt in ('-d'):
+            functionality['trade_test'] = True
 
     bot = Bitifier(accounts, functionality)
 

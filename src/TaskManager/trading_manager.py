@@ -47,15 +47,16 @@ class TradingManager(threading.Thread):
     order_oszillator = 1
     order_price = 1642.5515
     order_min_price = 1651.126939
-    dry_run = True
+    dry_run = False
 
-    def __init__(self, db_connector, db_lock, accounts, api, logger):
+    def __init__(self, db_connector, db_lock, accounts, api, logger, test_run=False):
         super(TradingManager, self).__init__()
         self.DBConnector = db_connector
         self.DBLock = db_lock
         self.Accounts = accounts
         self.API = api
         self.Logger = logger
+        self.dry_run = test_run
 
     def run(self):
         while True:
@@ -93,6 +94,7 @@ class TradingManager(threading.Thread):
                                                      'count': 20})
 
         if len(order_book['error']) > 0:
+            print('......ERROR - could not retrieve order book.')
             return
 
         buy_orders = order_book['result'][trading_pair]['bids']
@@ -157,6 +159,7 @@ class TradingManager(threading.Thread):
                                                          'count': 20})
 
             if len(order_book['error']) > 0:
+                print('......ERROR - could not retrieve order book.')
                 return
 
             buy_orders = order_book['result'][trading_pair]['bids']

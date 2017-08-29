@@ -31,7 +31,6 @@ class Bitifier:
 
         # Todo: replace fixed password with prompt - WARNING copy data from old DB
         passphrase = getpass.getpass('Enter the database password: ')
-        #passphrase = 'testphun123'
 
         self.DBConnector = DatabaseConnector(passphrase)
 
@@ -133,7 +132,7 @@ class Bitifier:
                 self.Threads.append(fund_manager)
 
             if functionality['trading']:
-                trade_manager = self.setup_trading_manager(self.DBConnector, dbLock, None)
+                trade_manager = self.setup_trading_manager(self.DBConnector, dbLock, None, functionality['trade_test'])
                 self.Threads.append(trade_manager)
 
             # fund_manager.run()
@@ -179,7 +178,7 @@ class Bitifier:
 
         return FundingManager(db_connector, db_lock, accounts, api, self.load_config(accounts[0].UserID), logger)
 
-    def setup_trading_manager(self, db_connector, db_lock, logger):
+    def setup_trading_manager(self, db_connector, db_lock, logger, test_run=False):
 
         api = None
         accounts = []
@@ -200,7 +199,7 @@ class Bitifier:
 
         api = API(accounts[0].APIKey, accounts[0].APISecret)
 
-        return TradingManager(db_connector, db_lock, accounts, api, logger)
+        return TradingManager(db_connector, db_lock, accounts, api, logger, test_run)
 
     def first_run(self):
         print('...checking if first run')
