@@ -8,7 +8,8 @@ def main(argv):
 
     accounts = []
     functionality = {'trading': False,
-                 'funding': False}
+                     'funding': False,
+                     'trade_test': False}
 
     try:
         opts, args = getopt.getopt(argv, 'ha:tfd', ['accounts='])
