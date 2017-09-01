@@ -74,7 +74,7 @@ class TradingManager(threading.Thread):
     def run_frequent_task(self):
         try:
             # account_state = self.get_account_state()
-            market_state = self.check_market_data(3)
+            market_state = self.check_market_data()  # Option parameter - pass integer for minimum extrema difference
             self.rsi_limit = self.calculate_adaptive_rsi_lim(market_state[3], [self.rsi_limit_low, self.rsi_limit_high])
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
@@ -274,7 +274,7 @@ class TradingManager(threading.Thread):
                     close_data = [float(sublist[4]) for sublist in clean_close_data]
 
                     smooth_vw_average = self.smooth_data([int(i) for i in interval_times], [float(i) for i in vw_average],
-                                                         15 * interval_size / 2,
+                                                         3 * interval_size,  # 3 - intervals for computation
                                                          'moving_average')
                     filtered_z = self.find_extrema(interval_times, smooth_vw_average, diff)
 
