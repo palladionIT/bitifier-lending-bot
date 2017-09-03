@@ -62,7 +62,7 @@ class FundingManager(threading.Thread):
 
     def run(self):
         while True:
-            print('Running ' + str(self.run_interval / 60) + ' minute task')
+            print('Running ' + str(self.run_interval / 60) + ' minute funding task')
             self.RunCounter += 1
 
             if self.RunCounter >= 6:
@@ -71,7 +71,7 @@ class FundingManager(threading.Thread):
                     self.update_config(self.load_config(account.UserID))
                     self.RunCounter = 0
             self.run_frequent_task()
-            print('Finished Running ' + str(self.run_interval / 60) + ' minute task')
+            print('Finished Running ' + str(self.run_interval / 60) + ' minute funding task')
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):

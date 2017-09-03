@@ -60,7 +60,7 @@ class TradingManager(threading.Thread):
 
     def run(self):
         while True:
-            print('Running ' + str(self.run_interval / 60) + ' minute task')
+            print('Running ' + str(self.run_interval / 60) + ' minute trading task')
             self.RunCounter += 1
 
             if False and self.RunCounter >= 6:
@@ -68,7 +68,7 @@ class TradingManager(threading.Thread):
                     account.update_config(self.load_config(account.UserID))
                     self.RunCounter = 0
             self.run_frequent_task()
-            print('Finished ' + str(self.run_interval / 60) + ' minute task')
+            print('Finished ' + str(self.run_interval / 60) + ' minute trading task')
             time.sleep(self.run_interval)
 
     def run_frequent_task(self):
