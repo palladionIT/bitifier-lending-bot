@@ -79,6 +79,9 @@ class TradingManager(threading.Thread):
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[5], market_state[4], last_trade)
+            print('...ACTION TEST: type: {} | check: {} | dry-run: {}'.format(action['type'],
+                                                                              action['check'],
+                                                                              self.dry_run))
             if action['type'] == 'buy' and action['check'] and not self.dry_run:
                 self.create_buy_order(action)
             if action['type'] == 'sell' and action['check'] and not self.dry_run:
@@ -192,7 +195,7 @@ class TradingManager(threading.Thread):
             else:
                 return
 
-        if status == 'closed':
+        if status == 'closed':  # todo: check that this gets filled at all cost
             price = tx_info['result'][tx_id]['price']
             usd_vol = tx_info['result'][tx_id]['cost']
             btc_vol = tx_info['result'][tx_id]['vol']
@@ -345,7 +348,10 @@ class TradingManager(threading.Thread):
         return order
 
     def check_buy_order(self, extremum, rsi, last_order=None):
-        print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi))
+        print('...BUY ORDER PARAMETERS - extremum: {} | RSI: {} | RSI-limit: {}'.format(extremum[3],
+                                                                                        rsi,
+                                                                                        self.rsi_limit))
+        # print('...BUY ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi))
         if extremum[3] > 0 or self.ignore_maxima:
             #if rsi[-1] < self.rsi_limit and self.trend > 0:
             if rsi < self.rsi_limit:
@@ -357,7 +363,10 @@ class TradingManager(threading.Thread):
                 'check': False}
 
     def check_sell_order(self, extremum, rsi, last_order):
-        print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
+        print('...SELL ORDER PARAMETERS - exteumum: {} | RSI: {} | value: {}'.format(extremum[3],
+                                                                                     rsi,
+                                                                                     extremum[-1]))
+        # print('...SELL ORDER PARAMETERS - extremum: ' + str(extremum[3]) + ' | RSI: ' + str(rsi) + ' | value: ' + str(extremum[-1]))
 
         if extremum[3] < 0 or self.ignore_maxima:
             if rsi > 70:
