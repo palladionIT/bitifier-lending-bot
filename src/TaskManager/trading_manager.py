@@ -79,9 +79,9 @@ class TradingManager(threading.Thread):
             self.trend = self.calculate_trend(market_state[3], 120)
             last_trade = self.get_last_action()
             action = self.check_conditions(market_state[0], market_state[1], market_state[2], market_state[3], market_state[5], market_state[4], last_trade)
-            print('...ACTION TEST: type: {} | check: {} | dry-run: {}'.format(action['type'],
-                                                                              action['check'],
-                                                                              self.dry_run))
+            #print('...ACTION TEST: type: {} | check: {} | dry-run: {}'.format(action['type'],
+            #                                                                  action['check'],
+            #                                                                  self.dry_run))
             if action['type'] == 'buy' and action['check'] and not self.dry_run:
                 self.create_buy_order(action)
             if action['type'] == 'sell' and action['check'] and not self.dry_run:
@@ -325,7 +325,7 @@ class TradingManager(threading.Thread):
         #print("...14 Epoch Real RSI: {} - window: {}".format(self.relative_strength_index(real_close_data, 0.235)[-1], 0.235))
         #print("14 Epoch Smooth RSI: {} - window: {}".format(self.relative_strength_index(market_data, 0.2333333)[-1], 0.23333333))
 
-        print("...Extrama count: {}".format(len(matching_extrema)))
+        # print("...Extrama count: {}".format(len(matching_extrema)))
 
         if len(matching_extrema) > 0 or self.ignore_maxima:
             recent_extrema = matching_extrema[-1]
@@ -333,7 +333,7 @@ class TradingManager(threading.Thread):
             rsi = self.relative_strength_index(real_close_data, 0.235) # 0.8 -> (0.8 * 60) # TODO: change to resemble real interval count
             min_rsi = self.rsi_min_interval(rsi, [window_start_index, window_end_index])
 
-            print('...EXTREMA Index: {} | Min-RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], min_rsi, self.rsi_limit, time.ctime()))
+            # print('...EXTREMA Index: {} | Min-RSI: {} | RSI Limit: {} | Time: {}'.format(extrema[-1][0], min_rsi, self.rsi_limit, time.ctime()))
 
             if self.chart_enforced and (self.chart_stuff and self.chart_stuff_switch):
                 self.display_graph(interval_times, rsi, extrema=extrema, yhlines=[15, 50, 70])
