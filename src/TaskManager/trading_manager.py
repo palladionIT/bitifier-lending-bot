@@ -117,6 +117,18 @@ class TradingManager(threading.Thread):
                                                              'volume': funds,
                                                              'expiretm': '+'+str(expire_time),
                                                              'oflags': 'viqc'})
+            if len(order_info['error']) > 0:
+                if 'EAPI:Feature disabled:viqc' in order_info['error']:
+                    tmp_price = float(buy_orders[0][0]) + 0.5  # Offset to be top of list
+
+                    btc_funds = funds / tmp_price
+
+                    order_info = self.API.query_private('AddOrder', {'pair': trading_pair,
+                                                                     'type': 'buy',
+                                                                     'ordertype': 'market',
+                                                                     'volume': btc_funds,
+                                                                     'expiretm': '+' + str(expire_time)})
+
             # Todo: implement loop to wait for closed confirmation
             tx_id = order_info['result']['txid'][0]
             tx_info = self.API.query_private('QueryOrders', {'txid': tx_id})
