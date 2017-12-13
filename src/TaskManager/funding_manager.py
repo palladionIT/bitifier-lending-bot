@@ -223,8 +223,11 @@ class FundingManager(threading.Thread):
     def load_exchange_rates(self):
         symbols = self.API.get_symbols()[2]
         for symbol in symbols:
-            if symbol[3:] == 'usd':
+            if symbol[3:] == 'usd' and 'btc' in symbol:  # todo think about proper rate limiting of the bot
+            #if 'usd' in symbol and 'btc' in symbol:
+            #if symbol[3:] == 'usd':
                 symbol_info = self.API.get_ticker(symbol=symbol)[2]
+                # time.sleep(1)
                 self.exchange_rate[symbol[:3]] = float(symbol_info['last_price'])
 
     def calculate_limts(self):
