@@ -57,6 +57,6 @@ Updates follow as my work/life balance permits.
 If you find this software useful feel free to send a small donation my way.
 
 Bitcoin Address:
-3H9oa2bQJg2p9akaemUvcoQBMj1VociM2R
+[3H9oa2bQJg2p9akaemUvcoQBMj1VociM2R](bitcoin:3H9oa2bQJg2p9akaemUvcoQBMj1VociM2R)
 
 ![BTC QR Code](btc_addr_qr.png "BTC Donation Address QR Code")
